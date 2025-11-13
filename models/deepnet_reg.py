@@ -30,5 +30,16 @@ class DeepNetReg:
         return compute_loss(Y_pred, Y_true, self.lam,
                             self.W1, self.W2, self.W3, self.W4)
 
-    def train(self, X, Y, epochs=2000, batch_size=64, verbose=True):
-        train(self, X, Y, epochs, batch_size, verbose)
+    def train(self, X, Y, epochs=2000, batch_size=64, verbose=True,
+              early_stopping=False, X_val=None, Y_val=None, patience=50):
+        if early_stopping:
+            from training import train_with_early_stopping
+            if X_val is None or Y_val is None:
+                raise ValueError("Validation data must be provided for early stopping.")
+            train_with_early_stopping(
+                self, self.optimizer, X, Y, X_val, Y_val,
+                epochs=epochs, batch_size=batch_size, patience=patience, verbose=verbose
+            )
+        else:
+            from models.train_model import train
+            train(self, X, Y, epochs=epochs, batch_size=batch_size, verbose=verbose)
