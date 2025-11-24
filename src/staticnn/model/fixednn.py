@@ -4,7 +4,7 @@ import numpy as np
 Array2D = np.ndarray
 Array1D = np.ndarray
 
-#### INIZIALIZZAZIONE RETE NEURALE STATICA VALORI HARDCODED FULL CONNECT ####
+####        INIZIALIZZAZIONE RETE NEURALE STATICA VALORI HARDCODED FULL CONNECT         ####
 #
 #.  HIDDEN LAYER = 1 
 #.  UNITS = 28
@@ -14,31 +14,43 @@ Array1D = np.ndarray
 ####    ####    ####    ####    ####    ####    ####    ####    ####    ####
 
 
-def initialize_neuraln(X, D) -> tuple[Array1D, Array2D, Array2D, Array1D]:
+def initialize_neuraln(x_i, d) -> tuple[Array1D, Array2D, Array2D, Array1D]:
     """
     Costruisce una rete neurale fissata di un hidden layer
 
     Args:
-        X: l'input layer
-        D: l'output layer
+        x_i: l'input layer
+        x_k: l'output layer
+        d: targets
     
     Ritorna:
-        X: l'input layer
-        W: matrice dei pesi W verso l'hidden layer
-        K:  ""   ""    ""   K verso l'output layer  
-        D: l'output layer
+        x_i: l'input layer
+        w_ji: matrice dei pesi W verso l'hidden layer
+        w_kj:  ""   ""    ""   K verso l'output layer  
+        x_k: l'output layer
     """
 
-    # Numero features e dimensioni NN
-    n_inputs = X.shape[1]      # 12
-    n_hidden = 28              # fissato
-    n_outputs = D.shape[1]     # 4
+    # Numero features e dimensioni NN 
+    n_inputs = x_i.shape[1] + 1     # 12 + bias
+    n_hidden = 28                   # fissato
+    n_outputs = d.shape[1]          # 4
 
     # Inizializzazione pesi
-    W = np.random.uniform(low = -0.7, high = 0.7, size = (n_inputs, n_hidden)) # (12 × 28)
-    K = np.random.uniform(low = -0.7, high = 0.7, size = (n_hidden, n_outputs)) # (28 × 4) 
+    w_ji = np.random.uniform(low = -0.7, high = 0.7, size = (n_inputs, n_hidden)) # (12 × 28)
+    w_kj = np.random.uniform(low = -0.7, high = 0.7, size = (n_hidden, n_outputs)) # (28 × 4) 
+
+    # BIAS
+    # Il bias deve essere aggiunto come un valore (= 1) in più sul vettore x -> x_0 (= 1) + x_1 + .... + x_n
+    # e come peso in più w_0. Questo funziona da treshold
+    rows = x_i.shape[0]
+    cols = x_i.shape[0]
+    bias = [[1] * 1 for _ in range(rows)]
+    x_ibiased = [[0] * cols for _ in range(rows)]
+
+    x_ibiased = np.hstack((x_i,bias))
+
     
-    return X, W, K, D
+    return x_ibiased, w_ji, w_kj, d
             
 
 

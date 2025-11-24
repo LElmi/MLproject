@@ -5,7 +5,7 @@ from src.staticnn.activationf.sigm import sigmaf
 Array2D = np.ndarray
 Array1D = np.ndarray
 
-def forward_hidden(x: Array1D, w: Array2D) -> Array1D:
+def forward_hidden(x_i: Array1D, w_ji: Array2D) -> Array1D:
     """
     Calcola l'output del hidden layer con act. func. sigma
     
@@ -16,19 +16,16 @@ def forward_hidden(x: Array1D, w: Array2D) -> Array1D:
     Ritorna: 
         vettore attivazioni hidden layer (n_hidden)
     """
-    n_hidden = w.shape[1]
-    x_1 = np.zeros(n_hidden)
+    n_hidden_units = w_ji.shape[1]
+    x_j = np.zeros(n_hidden_units)
 
-    for i in range(n_hidden):
+    for i in range(n_hidden_units):
+        x_j[i] = sigmaf(np.dot(x_i, w_ji[:, i]))
 
-
-        x_1[i] = sigmaf(np.dot(x, w[:, i]))
-
-    print(x_1)
-    return x_1
+    return x_j
 
 
-def forward_output(x_1: Array1D, k: Array2D) -> Array1D:
+def forward_output(x_j: Array1D, w_kj: Array2D) -> Array1D:
     """
     Calcola l'output layer (lineare).
     
@@ -39,10 +36,10 @@ def forward_output(x_1: Array1D, k: Array2D) -> Array1D:
     Ritorna:
         vettore predizioni
     """
-    n_outputs = k.shape[1]
-    out = np.zeros(n_outputs)
+    n_outputs = w_kj.shape[1]
+    x_k = np.zeros(n_outputs)
 
     for i in range(n_outputs):
-        out[i] = np.dot(x_1, k[:, i])
+        x_k[i] = np.dot(x_j, w_kj[:, i])
 
-    return out
+    return x_k
