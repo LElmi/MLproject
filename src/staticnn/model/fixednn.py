@@ -11,7 +11,7 @@ Array1D = np.ndarray
 #   ---->  numero totale di pesi in una full connect è: 
 #               numero unità input layer (12) * numero unità hidden layer (28 FIXED) = totale 336 unità
 #
-####    ####    ####    ####    ####    ####    ####    ####    ####    ####
+####    ####    ####    ####    ####    ####    ####    ####    ####    ####    ####    ####
 
 
 def initialize_neuraln(x_i, d) -> tuple[Array1D, Array2D, Array2D, Array1D]:
