@@ -14,7 +14,7 @@ Array1D = np.ndarray
 def run_training() -> None:
     # X: dataset input (N, 12)
     # D: dataset target (N, 4)
-    x, d = load_data("data/training_data/ML-CUP25-TR.csv")
+    x, d = load_data("../data/training_data/ML-CUP25-TR.csv")
 
     x = x.to_numpy()
     d = d.to_numpy()

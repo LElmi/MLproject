@@ -24,7 +24,7 @@ def forward_hidden(x: Array1D, w: Array2D) -> Array1D:
 
         x_1[i] = sigmaf(np.dot(x, w[:, i]))
 
-    print(x_1)
+    #print(x_1)
     return x_1
 
 

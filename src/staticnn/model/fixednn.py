@@ -30,15 +30,20 @@ def initialize_neuraln(X, D) -> tuple[Array1D, Array2D, Array2D, Array1D]:
     """
 
     # Numero features e dimensioni NN
-    n_inputs = X.shape[1]      # 12
+    n_inputs = X.shape[1] + 1   # 12 + 1 (bias)
     n_hidden = 28              # fissato
     n_outputs = D.shape[1]     # 4
 
     # Inizializzazione pesi
     W = np.random.uniform(low = -0.7, high = 0.7, size = (n_inputs, n_hidden)) # (12 × 28)
-    K = np.random.uniform(low = -0.7, high = 0.7, size = (n_hidden, n_outputs)) # (28 × 4) 
-    
-    return X, W, K, D
+    K = np.random.uniform(low = -0.7, high = 0.7, size = (n_hidden, n_outputs)) # (28 × 4)
+    rows = X.shape[0]
+    cols = X.shape[1] + 1
+    bias = [[1] * 1 for _ in range(rows)]
+    Xbiased = [[0] * cols for _ in range(rows)]
+
+    Xbiased = np.hstack((X,bias))
+    return Xbiased, W, K, D
             
 
 
