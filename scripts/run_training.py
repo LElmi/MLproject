@@ -19,6 +19,7 @@ def run_training() -> None:
     # D: dataset target (N, 4)
     x_i, d = load_data("data/training_data/ML-CUP25-TR.csv")
 
+    print("x_i.shape: ", x_i.shape, " d.shape: ", d.shape)
     x_i = x_i.to_numpy()
     d = d.to_numpy()
 
@@ -29,16 +30,46 @@ def run_training() -> None:
     # d: vettori risultati target
 
     x_i, w_ji, w_kj, d = initialize_neuraln(x_i, d) # <-- Inizializza NN (static)
+
+    print("x_i_biased.shape: ", x_i.shape, "w_ji.shape: ", w_ji.shape, "w_kj.shape: ", w_kj.shape)
     # ----------------------------------------------------------------
 
     # -------------------- FORWARD PRIMO PATTERN ---------------------    
-    x_j = forward_hidden(x_i[0], w_ji)     # <-- Calcolo valori nodi unico hidden layer
-    x_k = forward_output(x_j, w_kj)        # <-- Calcolo valori output
+    #x_j = forward_hidden(x_i[0], w_ji)     # <-- Calcolo valori nodi unico hidden layer
+    #x_k = forward_output(x_j, w_kj)        # <-- Calcolo valori output
     # ----------------------------------------------------------------
     
-    eta = 1
+    #x_k, x_j = forward_all_layers(x_i[0], w_ji, w_kj)
+
+    eta = 0.01
     # per un pattern
     #w_new = w + etha * (-2 * (e[0]) * dsigmaf(x)) 
+    
+    patterns = 500
+
+    for pattern in range (patterns):
+
+        x_k, x_j = forward_all_layers(x_i[pattern], w_ji, w_kj)
+        #print("x_k.shape: ", x_k.shape, " x_j.shape: ", x_j.shape)
+
+        dj, dk = compute_delta_all_layers(d[pattern], x_k, w_kj, x_j, x_i[pattern], w_ji, dsigmaf)
+        print("delta j: ", dj, "delta k: ", dk)
+        #"""
+        for kunit in range (w_kj.shape[1]):
+
+            for junit in range (w_kj.shape[0]):
+
+                w_kj[junit][kunit] = w_kj[junit][kunit] + ( eta * dk[kunit] * x_j[junit] )
+
+ 
+        for junit in range (w_ji.shape[1]):
+
+            for iunit in range (w_ji.shape[0]):
+
+                w_ji[iunit][junit] = w_ji[iunit][junit] + ( eta * dj[junit] * x_i[pattern][iunit] ) 
+        #"""
+        #print("|| Pattern number: ", pattern, " delta_k: ", dk, " delta_j: ", dj," ||", "\n w_ji: ", w_ji, "\n w_kj: ", w_kj)
+        #print("|| Pattern number: ", pattern, " delta_k: ", dk, " delta_j: ", dj," ||")
     
     print("x_k =", x_k)
 
