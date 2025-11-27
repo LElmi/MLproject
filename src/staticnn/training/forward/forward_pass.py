@@ -18,7 +18,7 @@ def forward_hidden(x_i: Array1D, w_ji: Array2D) -> Array1D:
     """
     n_hidden_units = w_ji.shape[1]
     x_j = np.zeros(n_hidden_units)
-
+    #print("inside forward hidden, x_j.size: ", x_j.shape, "w_ji.shape: ", w_ji.shape)
     for i in range(n_hidden_units):
         x_j[i] = sigmaf(np.dot(x_i, w_ji[:, i]))
 
@@ -43,3 +43,10 @@ def forward_output(x_j: Array1D, w_kj: Array2D) -> Array1D:
         x_k[i] = np.dot(x_j, w_kj[:, i])
 
     return x_k
+
+    
+    
+def forward_all_layers(x_i: Array1D, w_ji: Array2D, w_kj: Array2D) -> tuple[Array1D, Array1D]:
+
+    x_j = forward_hidden(x_i, w_ji)
+    return forward_output(x_j, w_kj), x_j
