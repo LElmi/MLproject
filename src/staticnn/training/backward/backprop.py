@@ -24,7 +24,7 @@ def delta_k(d: Array1D, x_k: Array1D) -> Array1D:
     dk = np.zeros(x_k.size)
     
     for kunit in range(x_k.size):
-        # Aggiorna il vettore deltak con la differenza tra target e previsione * la derivata della funzione lineare quindi l'elemento x_k
+        # Aggiorna il vettore deltak con la differenza tra target e previsione * la derivata della funzione lineare quindi 1
         dk[kunit] = (d[kunit] - x_k[kunit]) * 1
 
     #print(f"-----  dk[kunit] = (d[kunit] - x_k[kunit]) * x_k[kunit]) = {d[kunit]} - {x_k[kunit]} * {x_k[kunit]}")

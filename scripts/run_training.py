@@ -1,6 +1,7 @@
 # MAIN PROGETTO ML
 
 import numpy as np
+import matplotlib.pyplot as plt
 from src.staticnn.model.fixednn import initialize_neuraln
 from src.staticnn.training.forward.forward_pass import *
 from data.utils.load_data import load_data
@@ -45,32 +46,77 @@ def run_training() -> None:
     # per un pattern
     #w_new = w + etha * (-2 * (e[0]) * dsigmaf(x)) 
     
-    patterns = 500
+    # ||||||||||||||||||||||            ONLINE          ||||||||||||||||||||||
+    #"""
+    #while True:
+    epochs = 100
+    total_error_array = np.zeros(epochs)
 
-    for pattern in range (patterns):
+    for epoch in range(epochs):
 
-        x_k, x_j = forward_all_layers(x_i[pattern], w_ji, w_kj)
-        #print("x_k.shape: ", x_k.shape, " x_j.shape: ", x_j.shape)
+        patterns = 500
+        total_error = 0 # total error si azzera ad ogni batch
+        for pattern in range (patterns):
 
-        dj, dk = compute_delta_all_layers(d[pattern], x_k, w_kj, x_j, x_i[pattern], w_ji, dsigmaf)
-        print("delta j: ", dj, "\n\ndelta k: ", dk, "\n\n\n")
-        #"""
-        for kunit in range (w_kj.shape[1]):
+            x_k, x_j = forward_all_layers(x_i[pattern], w_ji, w_kj)
+            #print("x_k.shape: ", x_k.shape, " x_j.shape: ", x_j.shape)
 
-            for junit in range (w_kj.shape[0]):
+            dj, dk = compute_delta_all_layers(d[pattern], x_k, w_kj, x_j, x_i[pattern], w_ji, dsigmaf)
+            print("delta j: ", dj, "\n\ndelta k: ", dk, "\n\n\n")
 
-                w_kj[junit][kunit] = w_kj[junit][kunit] + ( eta * dk[kunit] * x_j[junit] )
+            for kunit in range (w_kj.shape[1]):
+                for junit in range (w_kj.shape[0]):
 
- 
-        for junit in range (w_ji.shape[1]):
+                    w_kj[junit][kunit] = w_kj[junit][kunit] + ( eta * dk[kunit] * x_j[junit] )
 
-            for iunit in range (w_ji.shape[0]):
+                    total_error += dk[kunit]   # <-- Calcolo errore totale come sommatoria degli errori dei pattern, da poi plottare
 
-                w_ji[iunit][junit] = w_ji[iunit][junit] + ( eta * dj[junit] * x_i[pattern][iunit] ) 
-        #"""
+    
+            for junit in range (w_ji.shape[1]):
+                for iunit in range (w_ji.shape[0]):
+
+                    w_ji[iunit][junit] = w_ji[iunit][junit] + ( eta * dj[junit] * x_i[pattern][iunit] ) 
+        
+        total_error_array[epoch] = total_error
+        print("!!! TOTAL ERROR: ", total_error, " !!!") 
+
+    ep = [ x for x in range(epochs) ]
+
+    plt.plot(ep, total_error_array)
+    plt.show()
+        
+    #    if total_error <= eps:
+    #        break
+        
         #print("|| Pattern number: ", pattern, " delta_k: ", dk, " delta_j: ", dj," ||", "\n w_ji: ", w_ji, "\n w_kj: ", w_kj)
         #print("|| Pattern number: ", pattern, " delta_k: ", dk, " delta_j: ", dj," ||")
-    
+    #"""
+
+    # ||||||||||||||||||||||            BATCH          ||||||||||||||||||||||
+    """
+    while True: 
+        
+        patterns = 500
+
+        for pattern in range(patterns):
+
+
+            x_k, x_j = forward_all_layers(x_i[pattern], w_ji, w_kj)
+            #print("x_k.shape: ", x_k.shape, " x_j.shape: ", x_j.shape   )
+            dj, dk += compute_delta_all_layers(d[pattern], x_k, w_kj, x_j, x_i[pattern], w_ji, dsigmaf)
+
+            dj += 
+
+
+            
+
+
+        if total_error >= e :
+
+
+            break
+
+    """
     print("x_k =", x_k)
 
 
