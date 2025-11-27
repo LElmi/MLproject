@@ -53,7 +53,7 @@ def run_training() -> None:
         #print("x_k.shape: ", x_k.shape, " x_j.shape: ", x_j.shape)
 
         dj, dk = compute_delta_all_layers(d[pattern], x_k, w_kj, x_j, x_i[pattern], w_ji, dsigmaf)
-        print("delta j: ", dj, "delta k: ", dk)
+        print("delta j: ", dj, "\n\ndelta k: ", dk, "\n\n\n")
         #"""
         for kunit in range (w_kj.shape[1]):
 

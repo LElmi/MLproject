@@ -31,8 +31,8 @@ def initialize_neuraln(x_i, d) -> tuple[Array1D, Array2D, Array2D, Array1D]:
     """
 
     # Numero features e dimensioni NN 
-    #n_inputs = x_i.shape[1]     # 12 + bias
-    n_inputs = x_i.shape[1]
+    n_inputs = x_i.shape[1] + 1  # 12 + bias
+    #n_inputs = x_i.shape[1]
     n_hidden = 28                   # fissato
     n_outputs = d.shape[1]          # 4
 
@@ -50,8 +50,8 @@ def initialize_neuraln(x_i, d) -> tuple[Array1D, Array2D, Array2D, Array1D]:
 
     x_ibiased = np.hstack((x_i,bias))
 
-    return x_i, w_ji, w_kj, d
-    #return x_ibiased, w_ji, w_kj, d
+    #return x_i, w_ji, w_kj, d
+    return x_ibiased, w_ji, w_kj, d
             
 
 
