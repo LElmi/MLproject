@@ -55,7 +55,7 @@ def run_training() -> None:
     for epoch in range(epochs):
 
         patterns = 500
-        total_error = 0 # total error si azzera ad ogni batch
+        total_error = 0 # total error si azzera ad ogni epoch
         for pattern in range (patterns):
 
             x_k, x_j = forward_all_layers(x_i[pattern], w_ji, w_kj)
@@ -69,9 +69,9 @@ def run_training() -> None:
 
                     w_kj[junit][kunit] = w_kj[junit][kunit] + ( eta * dk[kunit] * x_j[junit] )
 
-                    total_error += dk[kunit]   # <-- Calcolo errore totale come sommatoria degli errori dei pattern, da poi plottare
+                total_error += dk[kunit]   # <-- Calcolo errore totale come sommatoria degli errori dei pattern, da poi plottare
+                #E+=(x_k[kunit]- d[pattern][kunit])**2 /2
 
-    
             for junit in range (w_ji.shape[1]):
                 for iunit in range (w_ji.shape[0]):
 
@@ -79,6 +79,7 @@ def run_training() -> None:
         
         total_error_array[epoch] = total_error
         print("!!! TOTAL ERROR: ", total_error, " !!!") 
+
 
     ep = [ x for x in range(epochs) ]
 
