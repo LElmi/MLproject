@@ -1,0 +1,300 @@
+Index: src/staticnn/model/fixednn.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import numpy as np\n\n# Tipi utili per chiarezza\nArray2D = np.ndarray\nArray1D = np.ndarray\n\n####        INIZIALIZZAZIONE RETE NEURALE STATICA VALORI HARDCODED FULL CONNECT         ####\n#\n#.  HIDDEN LAYER = 1 \n#.  UNITS = 28\n#   ---->  numero totale di pesi in una full connect è: \n#               numero unità input layer (12) * numero unità hidden layer (28 FIXED) = totale 336 unità\n#\n####    ####    ####    ####    ####    ####    ####    ####    ####    ####    ####    ####\n\n\ndef initialize_neuraln(x_i, d) -> tuple[Array1D, Array2D, Array2D, Array1D]:\n    \"\"\"\n    Costruisce una rete neurale fissata di un hidden layer\n\n    Args:\n        x_i: l'input layer\n        x_k: l'output layer\n        d: targets\n    \n    Ritorna:\n        x_i: l'input layer\n        w_ji: matrice dei pesi W verso l'hidden layer\n        w_kj:  \"\"   \"\"    \"\"   K verso l'output layer  \n        x_k: l'output layer\n    \"\"\"\n\n    # Numero features e dimensioni NN \n    n_inputs = x_i.shape[1] + 1     # 12 + bias\n    n_hidden = 28                   # fissato\n    n_outputs = d.shape[1]          # 4\n\n    # Inizializzazione pesi\n    w_ji = np.random.uniform(low = -0.7, high = 0.7, size = (n_inputs, n_hidden)) # (12 × 28)\n    w_kj = np.random.uniform(low = -0.7, high = 0.7, size = (n_hidden, n_outputs)) # (28 × 4) \n\n    # BIAS\n    # Il bias deve essere aggiunto come un valore (= 1) in più sul vettore x -> x_0 (= 1) + x_1 + .... + x_n\n    # e come peso in più w_0. Questo funziona da treshold\n    rows = x_i.shape[0]\n    cols = x_i.shape[0]\n    bias = [[1] * 1 for _ in range(rows)]\n    x_ibiased = [[0] * cols for _ in range(rows)]\n\n    x_ibiased = np.hstack((x_i,bias))\n\n    \n    return x_ibiased, w_ji, w_kj, d\n            \n\n\n\n\"\"\"\nrandom.uniform(low=0.0, high=1.0, size=None)\n\nDraw samples from a uniform distribution.\n\nSamples are uniformly distributed over the half-open interval [low, high) (includes low, but excludes high). In other words, any value within the given interval is equally likely to be drawn by uniform.\n\nNote\n\nNew code should use the uniform method of a Generator instance instead; please see the Quick start.\n\nParameters:\n\n    low\n    float or array_like of floats, optional\n\n        Lower boundary of the output interval. All values generated will be greater than or equal to low. The default value is 0.\n    high\n    float or array_like of floats\n\n        Upper boundary of the output interval. All values generated will be less than or equal to high. The high limit may be included in the returned array of floats due to floating-point rounding in the equation low + (high-low) * random_sample(). The default value is 1.0.\n    size\n    int or tuple of ints, optional\n\n        Output shape. If the given shape is, e.g., (m, n, k), then m * n * k samples are drawn. If size is None (default), a single value is returned if low and high are both scalars. Otherwise, np.broadcast(low, high).size samples are drawn.\n\n\n\"\"\"
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/src/staticnn/model/fixednn.py b/src/staticnn/model/fixednn.py
+--- a/src/staticnn/model/fixednn.py	(revision 83e1b461b17c8f51dcd840f6c760bbdb3532533f)
++++ b/src/staticnn/model/fixednn.py	(date 1764251094181)
+@@ -36,8 +36,8 @@
+     n_outputs = d.shape[1]          # 4
+ 
+     # Inizializzazione pesi
+-    w_ji = np.random.uniform(low = -0.7, high = 0.7, size = (n_inputs, n_hidden)) # (12 × 28)
+-    w_kj = np.random.uniform(low = -0.7, high = 0.7, size = (n_hidden, n_outputs)) # (28 × 4) 
++    w_ji = np.random.uniform(low = -0.07, high = 0.07, size = (n_inputs, n_hidden)) # (12+bias × 28)
++    w_kj = np.random.uniform(low = -0.07, high = 0.07, size = (n_hidden, n_outputs)) # (28 × 4)
+ 
+     # BIAS
+     # Il bias deve essere aggiunto come un valore (= 1) in più sul vettore x -> x_0 (= 1) + x_1 + .... + x_n
+@@ -47,7 +47,7 @@
+     bias = [[1] * 1 for _ in range(rows)]
+     x_ibiased = [[0] * cols for _ in range(rows)]
+ 
+-    x_ibiased = np.hstack((x_i,bias))
++    x_ibiased = np.hstack((bias,x_i))
+ 
+     
+     return x_ibiased, w_ji, w_kj, d
+Index: src/staticnn/training/backward/backward_pass.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import numpy as np\nfrom src.staticnn.activationf.sigm import sigmaf\n#from src.staticnn.training.forward.forward_pass import forward_hidden, forward_output\ndef backprop_output(O_u, delta_t):\n    DelW=O_u * delta_t\n\n    return DelW
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/src/staticnn/training/backward/backward_pass.py b/src/staticnn/training/backward/backward_pass.py
+--- a/src/staticnn/training/backward/backward_pass.py	(revision 83e1b461b17c8f51dcd840f6c760bbdb3532533f)
++++ b/src/staticnn/training/backward/backward_pass.py	(date 1764251094181)
+@@ -1,5 +1,6 @@
+ import numpy as np
+ from src.staticnn.activationf.sigm import sigmaf
++from src.staticnn.activationf.relu import *
+ #from src.staticnn.training.forward.forward_pass import forward_hidden, forward_output
+ def backprop_output(O_u, delta_t):
+     DelW=O_u * delta_t
+Index: src/staticnn/training/backward/backprop.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import numpy as np\nfrom typing import Callable\n\n\nArray2D = np.ndarray\nArray1D = np.ndarray\n\n\n\ndef delta_k(d: Array1D, x_k: Array1D) -> Array1D: \n    \"\"\"\n    Funzione che calcola il delta k vettore, quindi una componente fondamentale per calcolare la backprop sull'hidden layer\n\n    Args:\n        d: vettore target\n        x_k: vettore output layer\n        (opzionale) f_deactiv: derivata della funzione di attivazione, nel caso dell'output layer è linaere quindi ritorno al x_k\n        x_j: vettore hidden layer\n\n    Ritorna: \n        dk: vettore dei delta k \n    \"\"\"\n    # Inizializza vettore delta k vuoto\n    dk = np.zeros(x_k.size)\n    \n    for kunit in range(x_k.size):\n        print(s)\n        # Aggiorna il vettore deltak con la differenza tra target e previsione * la derivata della funzione lineare quindi l'elemento x_k\n        dk[kunit] = (d[kunit] - x_k[kunit]) * x_k[kunit]\n\n    return dk\n\n\n\ndef delta_j(x_j: Array1D, w_kj: Array2D, delta_k: Array1D, x_k: Array1D, fd: Callable) -> Array1D:\n    \"\"\"\n    Funzione che calcola il vettore delta_j corrispondente all'hiddent layer\n    \n    Args: \n        x_j: vettore hidden layer\n        w_kj: matrice dei pesi tra l'ultimo hidden layer e l'otput layer\n        delta_k: vettore dei delta k \n        x_k: vettore output layer\n        fd: derivata della funzione di attivazione dell'hidden layer da passare\n\n    Ritorna:\n        dj: vettore dei delta j\n    \"\"\"\n    # Inizializza vettore delta j vuoto\n    dj = np.zeros(x_j.size)\n\n    \n    for junit in range(x_j.size):\n\n        sum_parz_w_kj = 0\n        # Somma tra tutti i delta[k] * e il peso corrispondente della matrice w_kj, fissato il nodo j (=junit) di destinazione \n        for k in range(x_k.size):\n            sum_parz_w_kj += (delta_k[k] * w_kj[junit][k])\n        \n        # La Net del nodo j = x_j[junit]\n        dj[junit] = sum_parz_w_kj * fd(x_j[junit])\n    \n    return dj\n        \n\n        \n#def backprop_output(d: Array1D, x_k: Array1D, f_prime: function, w_kj: Array2D, x_j: Array1D,  ):\n    \"\"\"\n    Calcola per ogni k che appartengono all'output layer su ogni nodo appartenente all'hidden layer precedente\n\n    Args:\n        x_k: vettore output layer\n        w_kj: matrice dei pesi tra l'ultimo hidden layer e l'otput layer\n        x_j: vettore hidden layer\n\n    Ritorna:\n        matrice k aggiornata\n    \"\"\"\n\n#def backprop_hidden()
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/src/staticnn/training/backward/backprop.py b/src/staticnn/training/backward/backprop.py
+--- a/src/staticnn/training/backward/backprop.py	(revision 83e1b461b17c8f51dcd840f6c760bbdb3532533f)
++++ b/src/staticnn/training/backward/backprop.py	(date 1764251094181)
+@@ -1,13 +1,13 @@
+ import numpy as np
+ from typing import Callable
+-
++from src.staticnn.activationf.relu import *
+ 
+ Array2D = np.ndarray
+ Array1D = np.ndarray
+ 
+ 
+ 
+-def delta_k(d: Array1D, x_k: Array1D) -> Array1D: 
++def delta_k(d: Array1D, x_k: Array1D, x_j, w_kj) -> Array1D:
+     """
+     Funzione che calcola il delta k vettore, quindi una componente fondamentale per calcolare la backprop sull'hidden layer
+ 
+@@ -22,17 +22,17 @@
+     """
+     # Inizializza vettore delta k vuoto
+     dk = np.zeros(x_k.size)
+-    
++    net = np.zeros(x_k.size)
+     for kunit in range(x_k.size):
+-        print(s)
+         # Aggiorna il vettore deltak con la differenza tra target e previsione * la derivata della funzione lineare quindi l'elemento x_k
+-        dk[kunit] = (d[kunit] - x_k[kunit]) * x_k[kunit]
++        net[kunit]=np.dot(x_j, w_kj[:, [kunit]])
++        dk[kunit] = (d[kunit] - x_k[kunit]) * net[kunit]
+ 
+     return dk
+ 
+ 
+ 
+-def delta_j(x_j: Array1D, w_kj: Array2D, delta_k: Array1D, x_k: Array1D, fd: Callable) -> Array1D:
++def delta_j(x_j: Array1D, w_kj: Array2D, delta_k: Array1D, x_k: Array1D, fd: Callable, x_i, w_ji) -> Array1D:
+     """
+     Funzione che calcola il vettore delta_j corrispondente all'hiddent layer
+     
+@@ -48,7 +48,7 @@
+     """
+     # Inizializza vettore delta j vuoto
+     dj = np.zeros(x_j.size)
+-
++    net = np.zeros(x_j.size)
+     
+     for junit in range(x_j.size):
+ 
+@@ -58,7 +58,9 @@
+             sum_parz_w_kj += (delta_k[k] * w_kj[junit][k])
+         
+         # La Net del nodo j = x_j[junit]
+-        dj[junit] = sum_parz_w_kj * fd(x_j[junit])
++
++        net[junit]=np.dot(x_i, w_ji[:, [junit]])
++        dj[junit] = sum_parz_w_kj * fd(net[junit])
+     
+     return dj
+         
+Index: src/staticnn/training/forward/forward_pass.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import numpy as np\nfrom src.staticnn.activationf.sigm import sigmaf\n\n# Tipi utili per chiarezza\nArray2D = np.ndarray\nArray1D = np.ndarray\n\ndef forward_hidden(x_i: Array1D, w_ji: Array2D) -> Array1D:\n    \"\"\"\n    Calcola l'output del hidden layer con act. func. sigma\n    \n    Args: \n        X: vettore input (n_features)\n        W: matrice pesi (n_features, n_hidden)\n    \n    Ritorna: \n        vettore attivazioni hidden layer (n_hidden)\n    \"\"\"\n    n_hidden_units = w_ji.shape[1]\n    x_j = np.zeros(n_hidden_units)\n\n    for i in range(n_hidden_units):\n        x_j[i] = sigmaf(np.dot(x_i, w_ji[:, i]))\n\n    return x_j\n\n\ndef forward_output(x_j: Array1D, w_kj: Array2D) -> Array1D:\n    \"\"\"\n    Calcola l'output layer (lineare).\n    \n    Args:\n        X1: vettore attivazioni hidden layer (n_hidden)\n        K: matrice pesi output (n_hidden, n_outputs)\n    \n    Ritorna:\n        vettore predizioni\n    \"\"\"\n    n_outputs = w_kj.shape[1]\n    x_k = np.zeros(n_outputs)\n\n    for i in range(n_outputs):\n        x_k[i] = np.dot(x_j, w_kj[:, i])\n\n    return x_k\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/src/staticnn/training/forward/forward_pass.py b/src/staticnn/training/forward/forward_pass.py
+--- a/src/staticnn/training/forward/forward_pass.py	(revision 83e1b461b17c8f51dcd840f6c760bbdb3532533f)
++++ b/src/staticnn/training/forward/forward_pass.py	(date 1764251094181)
+@@ -1,6 +1,6 @@
+ import numpy as np
+ from src.staticnn.activationf.sigm import sigmaf
+-
++from src.staticnn.activationf.relu import *
+ # Tipi utili per chiarezza
+ Array2D = np.ndarray
+ Array1D = np.ndarray
+@@ -20,8 +20,8 @@
+     x_j = np.zeros(n_hidden_units)
+ 
+     for i in range(n_hidden_units):
+-        x_j[i] = sigmaf(np.dot(x_i, w_ji[:, i]))
+-
++        #x_j[i] = sigmaf(np.dot(x_i, w_ji[:, i]))
++        x_j[i] = relu(np.dot(x_i, w_ji[:, i]))
+     return x_j
+ 
+ 
+Index: scripts/run_training.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+># MAIN PROGETTO ML\n\nimport numpy as np\nfrom src.staticnn.model.fixednn import initialize_neuraln\nfrom src.staticnn.training.forward.forward_pass import *\nfrom data.utils.load_data import load_data\nfrom src.staticnn.activationf.sigm import *\nfrom src.staticnn.training.backward.backprop import *\n\n\n# Tipi utili per chiarezza\nArray2D = np.ndarray\nArray1D = np.ndarray\nArray0D = np.ndarray\n\n\ndef run_training() -> None:\n    # X: dataset input (N, 12)\n    # D: dataset target (N, 4)\n    x_i, d = load_data(\"data/training_data/ML-CUP25-TR.csv\")\n\n    x_i = x_i.to_numpy()\n    d = d.to_numpy()\n\n    # ----------------------- INIZIALIZZA NN -------------------------\n    # x: vettore input layer\n    # w: matrice pesi input layer - hidden layer\n    # k: matrice pesi hidden layer - output layer\n    # d: vettori risultati target\n\n    x_i, w_ji, w_kj, d = initialize_neuraln(x_i, d) # <-- Inizializza NN (static)\n    # ----------------------------------------------------------------\n\n    # -------------------- FORWARD PRIMO PATTERN ---------------------    \n    x_j = forward_hidden(x_i[0], w_ji)     # <-- Calcolo valori nodi unico hidden layer\n    x_k = forward_output(x_j, w_kj)        # <-- Calcolo valori output\n    # ----------------------------------------------------------------\n    \n    eta = 1\n    # per un pattern\n    #w_new = w + etha * (-2 * (e[0]) * dsigmaf(x)) \n    \n    print(\"x_k =\", x_k)\n\n\nif __name__ == \"__main__\":\n    run_training()\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/scripts/run_training.py b/scripts/run_training.py
+--- a/scripts/run_training.py	(revision 83e1b461b17c8f51dcd840f6c760bbdb3532533f)
++++ b/scripts/run_training.py	(date 1764251094181)
+@@ -6,22 +6,24 @@
+ from data.utils.load_data import load_data
+ from src.staticnn.activationf.sigm import *
+ from src.staticnn.training.backward.backprop import *
+-
+-
++from src.staticnn.activationf.relu import *
+ # Tipi utili per chiarezza
+ Array2D = np.ndarray
+ Array1D = np.ndarray
+ Array0D = np.ndarray
+ 
+ 
++
++
++
+ def run_training() -> None:
+     # X: dataset input (N, 12)
+     # D: dataset target (N, 4)
+-    x_i, d = load_data("data/training_data/ML-CUP25-TR.csv")
++    x_i, d = load_data("../data/training_data/ML-CUP25-TR.csv")
+ 
+     x_i = x_i.to_numpy()
+     d = d.to_numpy()
+-
++    eta=0.001
+     # ----------------------- INIZIALIZZA NN -------------------------
+     # x: vettore input layer
+     # w: matrice pesi input layer - hidden layer
+@@ -32,11 +34,25 @@
+     # ----------------------------------------------------------------
+ 
+     # -------------------- FORWARD PRIMO PATTERN ---------------------    
+-    x_j = forward_hidden(x_i[0], w_ji)     # <-- Calcolo valori nodi unico hidden layer
+-    x_k = forward_output(x_j, w_kj)        # <-- Calcolo valori output
++
+     # ----------------------------------------------------------------
+-    
+-    eta = 1
++    Patterns=500
++    for pattern in range (Patterns):
++        x_j = forward_hidden(x_i[pattern], w_ji)  # <-- Calcolo valori nodi unico hidden layer
++        x_k = forward_output(x_j, w_kj)  # <-- Calcolo valori output
++        dk=delta_k(d[pattern], x_k, x_j, w_kj)
++        dj=delta_j(x_j, w_kj, dk, x_k, relu_deriv, x_i[pattern], w_ji)
++        print("pattern=", pattern, "d_k =", dk)
++        for kunit in range (w_kj.shape[1]):
++            for junit in range (w_kj.shape[0]):
++                w_kj[junit][kunit]+=eta*dk[kunit]*x_j[junit]
++
++        for junit in range (w_ji.shape[1]):
++            for iunit in range (w_ji.shape[0]):
++                w_ji[iunit][junit]+=eta*dj[junit]*x_i[pattern][iunit]
++
++        #print("pattern number ", pattern, " d_k= ", dk)
++        #print("pattern number ", pattern, " dj= ", dj)
+     # per un pattern
+     #w_new = w + etha * (-2 * (e[0]) * dsigmaf(x)) 
+     
+Index: src/staticnn/activationf/relu.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/src/staticnn/activationf/relu.py b/src/staticnn/activationf/relu.py
+new file mode 100644
+--- /dev/null	(date 1764251094181)
++++ b/src/staticnn/activationf/relu.py	(date 1764251094181)
+@@ -0,0 +1,7 @@
++import numpy as np
++
++def relu(z):
++    return np.maximum(0, z)
++
++def relu_deriv(z):
++    return (z > 0).astype(float)
+Index: .idea/inspectionProfiles/profiles_settings.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/inspectionProfiles/profiles_settings.xml b/.idea/inspectionProfiles/profiles_settings.xml
+new file mode 100644
+--- /dev/null	(date 1764251094181)
++++ b/.idea/inspectionProfiles/profiles_settings.xml	(date 1764251094181)
+@@ -0,0 +1,6 @@
++<component name="InspectionProjectProfileManager">
++  <settings>
++    <option name="USE_PROJECT_PROFILE" value="false" />
++    <version value="1.0" />
++  </settings>
++</component>
+\ No newline at end of file
+Index: .idea/misc.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/misc.xml b/.idea/misc.xml
+new file mode 100644
+--- /dev/null	(date 1764251094181)
++++ b/.idea/misc.xml	(date 1764251094181)
+@@ -0,0 +1,7 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project version="4">
++  <component name="Black">
++    <option name="sdkName" value="Python 3.14 (MLproject)" />
++  </component>
++  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.14 (MLproject)" project-jdk-type="Python SDK" />
++</project>
+\ No newline at end of file
+Index: .idea/vcs.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/vcs.xml b/.idea/vcs.xml
+new file mode 100644
+--- /dev/null	(date 1764251094181)
++++ b/.idea/vcs.xml	(date 1764251094181)
+@@ -0,0 +1,6 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project version="4">
++  <component name="VcsDirectoryMappings">
++    <mapping directory="$PROJECT_DIR$" vcs="Git" />
++  </component>
++</project>
+\ No newline at end of file
+Index: .idea/MLproject.iml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/.idea/MLproject.iml b/.idea/MLproject.iml
+new file mode 100644
+--- /dev/null	(date 1764251094181)
++++ b/.idea/MLproject.iml	(date 1764251094181)
+@@ -0,0 +1,7 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<module version="4">
++  <component name="PyDocumentationSettings">
++    <option name="format" value="GOOGLE" />
++    <option name="myDocStringFormat" value="Google" />
++  </component>
++</module>
+\ No newline at end of file
