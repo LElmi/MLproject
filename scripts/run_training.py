@@ -18,7 +18,7 @@ Array0D = np.ndarray
 def run_training() -> None:
     # X: dataset input (N, 12)
     # D: dataset target (N, 4)
-    x_i, d = load_data("data/training_data/ML-CUP25-TR.csv")
+    x_i, d = load_data("../data/training_data/ML-CUP25-TR.csv")
 
     print("x_i.shape: ", x_i.shape, " d.shape: ", d.shape)
     x_i = x_i.to_numpy()
@@ -49,36 +49,44 @@ def run_training() -> None:
     # ||||||||||||||||||||||            ONLINE          ||||||||||||||||||||||
     #"""
     #while True:
-    epochs = 100
+    epochs = 10
     total_error_array = np.zeros(epochs)
-
+    patterns = x_i.shape[0]
     for epoch in range(epochs):
 
-        patterns = 500
-        total_error = 0 # total error si azzera ad ogni epoch
+
+        total_error = np.zeros(w_kj.shape[1]) # total error si azzera ad ogni epoch
+        MSE_k = np.zeros(w_kj.shape[1])
         for pattern in range (patterns):
 
             x_k, x_j = forward_all_layers(x_i[pattern], w_ji, w_kj)
             #print("x_k.shape: ", x_k.shape, " x_j.shape: ", x_j.shape)
 
             dj, dk = compute_delta_all_layers(d[pattern], x_k, w_kj, x_j, x_i[pattern], w_ji, dsigmaf)
-            print("delta j: ", dj, "\n\ndelta k: ", dk, "\n\n\n")
+            #print("delta j: ", dj, "\n\ndelta k: ", dk, "\n\n\n")
 
             for kunit in range (w_kj.shape[1]):
                 for junit in range (w_kj.shape[0]):
 
-                    w_kj[junit][kunit] = w_kj[junit][kunit] + ( eta * dk[kunit] * x_j[junit] )
+                    w_kj[junit][kunit] +=  ( eta * dk[kunit] * x_j[junit] )
 
-                total_error += dk[kunit]   # <-- Calcolo errore totale come sommatoria degli errori dei pattern, da poi plottare
-                #E+=(x_k[kunit]- d[pattern][kunit])**2 /2
+                #total_error += dk[kunit]   # <-- Calcolo errore totale come sommatoria degli errori dei pattern, da poi plottare
+                MSE_k[kunit]+= (d[pattern][kunit]-x_k[kunit])**2
 
             for junit in range (w_ji.shape[1]):
                 for iunit in range (w_ji.shape[0]):
-
-                    w_ji[iunit][junit] = w_ji[iunit][junit] + ( eta * dj[junit] * x_i[pattern][iunit] ) 
-        
+                    w_ji[iunit][junit] += ( eta * dj[junit] * x_i[pattern][iunit] )
+            print("pattern=", pattern, "\nx_k", x_k, "\ntargets=", d[pattern], "\ndelta_k=",dk)
+        MSE_k =  MSE_k / patterns
+        MSE_tot=0
+        for i in range (w_kj.shape[1]):
+            print(MSE_k[i])
+            MSE_tot+= MSE_k[i]
+        total_error=MSE_tot/w_kj.shape[1]
         total_error_array[epoch] = total_error
-        print("!!! TOTAL ERROR: ", total_error, " !!!") 
+        print("!!! TOTAL ERROR: ", total_error, " !!!")
+
+
 
 
     ep = [ x for x in range(epochs) ]
@@ -118,7 +126,6 @@ def run_training() -> None:
             break
 
     """
-    print("x_k =", x_k)
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 import numpy as np
 from src.staticnn.activationf.sigm import sigmaf
-
+from src.staticnn.activationf.relu import *
 # Tipi utili per chiarezza
 Array2D = np.ndarray
 Array1D = np.ndarray
@@ -21,7 +21,7 @@ def forward_hidden(x_i: Array1D, w_ji: Array2D) -> Array1D:
     #print("inside forward hidden, x_j.size: ", x_j.shape, "w_ji.shape: ", w_ji.shape)
     for i in range(n_hidden_units):
         x_j[i] = sigmaf(np.dot(x_i, w_ji[:, i]))
-
+        #x_j[i] = relu(np.dot(x_i, w_ji[:, i]))
     return x_j
 
 

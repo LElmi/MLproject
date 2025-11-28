@@ -33,12 +33,12 @@ def initialize_neuraln(x_i, d) -> tuple[Array1D, Array2D, Array2D, Array1D]:
     # Numero features e dimensioni NN 
     n_inputs = x_i.shape[1] + 1  # 12 + bias
     #n_inputs = x_i.shape[1]
-    n_hidden = 28                   # fissato
+    n_hidden = 32                  # fissato
     n_outputs = d.shape[1]          # 4
 
     # Inizializzazione pesi
-    w_ji = np.random.uniform(low = -0.7, high = 0.7, size = (n_inputs, n_hidden)) # (12 × 28)
-    w_kj = np.random.uniform(low = -0.7, high = 0.7, size = (n_hidden, n_outputs)) # (28 × 4) 
+    w_ji = np.random.uniform(low = -0.07, high = 0.07, size = (n_inputs, n_hidden)) # (12+bias × 28)
+    w_kj = np.random.uniform(low = -0.07, high = 0.07, size = (n_hidden, n_outputs)) # (28 × 4)
 
     # BIAS
     # Il bias deve essere aggiunto come un valore (= 1) in più sul vettore x -> x_0 (= 1) + x_1 + .... + x_n
@@ -48,7 +48,7 @@ def initialize_neuraln(x_i, d) -> tuple[Array1D, Array2D, Array2D, Array1D]:
     bias = [[1] * 1 for _ in range(rows)]
     x_ibiased = [[0] * cols for _ in range(rows)]
 
-    x_ibiased = np.hstack((x_i,bias))
+    x_ibiased = np.hstack((bias,x_i))
 
     #return x_i, w_ji, w_kj, d
     return x_ibiased, w_ji, w_kj, d
