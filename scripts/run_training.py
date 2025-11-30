@@ -30,9 +30,9 @@ def run_training() -> None:
     # k: matrice pesi hidden layer - output layer
     # d: vettori risultati target
 
-    x_i, w_ji, w_kj, d = initialize_neuraln(x_i, d) # <-- Inizializza NN (static)
+    x_i, w_j1i, w_kj2,w_j2j1, d = initialize_neuraln(x_i, d) # <-- Inizializza NN (static)
 
-    print("x_i_biased.shape: ", x_i.shape, "w_ji.shape: ", w_ji.shape, "w_kj.shape: ", w_kj.shape)
+    #print("x_i_biased.shape: ", x_i.shape, "w_ji.shape: ", w_ji.shape, "w_kj.shape: ", w_kj.shape)
     # ----------------------------------------------------------------
 
     # -------------------- FORWARD PRIMO PATTERN ---------------------    
@@ -42,52 +42,53 @@ def run_training() -> None:
     
     #x_k, x_j = forward_all_layers(x_i[0], w_ji, w_kj)
 
-    eta = 0.01
+    eta = 0.0000025
     # per un pattern
     #w_new = w + etha * (-2 * (e[0]) * dsigmaf(x)) 
     
     # ||||||||||||||||||||||            ONLINE          ||||||||||||||||||||||
     #"""
     #while True:
-    epochs = 10
+    epochs = 5000
     total_error_array = np.zeros(epochs)
     patterns = x_i.shape[0]
+
     for epoch in range(epochs):
+        #mescolo gli indici ad ogni epoca, servirà? BOH
+        shuffled_indices = np.random.permutation(patterns)
 
+        total_error = np.zeros(w_kj2.shape[1])
+        MSE_k = np.zeros(w_kj2.shape[1])
 
-        total_error = np.zeros(w_kj.shape[1]) # total error si azzera ad ogni epoch
-        MSE_k = np.zeros(w_kj.shape[1])
-        for pattern in range (patterns):
+        for idx in shuffled_indices:
+            pattern = idx
+            x_k, x_j2, x_j1 = forward_all_layers(x_i[pattern], w_j1i, w_j2j1, w_kj2)
 
-            x_k, x_j = forward_all_layers(x_i[pattern], w_ji, w_kj)
-            #print("x_k.shape: ", x_k.shape, " x_j.shape: ", x_j.shape)
+            dj1, dj2, dk = compute_delta_all_layers(d[pattern], x_k, w_kj2, x_j1, w_j2j1, x_j2, w_j1i, x_i[pattern],
+                                                    relu_deriv)
 
-            dj, dk = compute_delta_all_layers(d[pattern], x_k, w_kj, x_j, x_i[pattern], w_ji, dsigmaf)
-            #print("delta j: ", dj, "\n\ndelta k: ", dk, "\n\n\n")
+            for kunit in range(w_kj2.shape[1]):
+                for junit in range(w_kj2.shape[0]):
+                    w_kj2[junit, kunit] += eta * dk[kunit] * x_j2[junit]
 
-            for kunit in range (w_kj.shape[1]):
-                for junit in range (w_kj.shape[0]):
+            for j2unit in range(w_j2j1.shape[1]):
+                for j1unit in range(w_j2j1.shape[0]):
+                    w_j2j1[j1unit, j2unit] += eta * dj2[j2unit] * x_j1[j1unit]
 
-                    w_kj[junit][kunit] +=  ( eta * dk[kunit] * x_j[junit] )
+            for j1unit in range(w_j1i.shape[1]):
+                for iunit in range(w_j1i.shape[0]):
+                    w_j1i[iunit, j1unit] += eta * dj1[j1unit] * x_i[pattern, iunit]
 
-                #total_error += dk[kunit]   # <-- Calcolo errore totale come sommatoria degli errori dei pattern, da poi plottare
-                MSE_k[kunit]+= (d[pattern][kunit]-x_k[kunit])**2
+            MSE_k += (d[pattern] - x_k) ** 2
+            print("pattern=", pattern, "\nx_k", x_k, "\ntargets=", d[pattern], "\ndelta_k=", dk)
 
-            for junit in range (w_ji.shape[1]):
-                for iunit in range (w_ji.shape[0]):
-                    w_ji[iunit][junit] += ( eta * dj[junit] * x_i[pattern][iunit] )
-            print("pattern=", pattern, "\nx_k", x_k, "\ntargets=", d[pattern], "\ndelta_k=",dk)
-        MSE_k =  MSE_k / patterns
-        MSE_tot=0
-        for i in range (w_kj.shape[1]):
-            print(MSE_k[i])
-            MSE_tot+= MSE_k[i]
-        total_error=MSE_tot/w_kj.shape[1]
+        MSE_k = MSE_k / patterns
+        MSE_tot = 0
+        for i in range(w_kj2.shape[1]):
+            MSE_tot += MSE_k[i]
+        total_error = MSE_tot / patterns
         total_error_array[epoch] = total_error
         print("!!! TOTAL ERROR: ", total_error, " !!!")
-
-
-
 
     ep = [ x for x in range(epochs) ]
 

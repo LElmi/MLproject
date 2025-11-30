@@ -5,7 +5,7 @@ import math
 
 def sigmaf(x, alpha=1):
     return 1 / (1 + math.e ** (-alpha * x))
-
+    #return math.e**x/(math.e**x + 1.)
 def dsigmaf(x, alpha=1):
     s = sigmaf(x, alpha)
     return s * (1 - s)
