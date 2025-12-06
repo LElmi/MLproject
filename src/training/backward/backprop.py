@@ -52,22 +52,36 @@ def delta_j(x_i: Array1D, w_ji: Array2D, x_j: Array1D, w_kj: Array2D, delta_k: A
     
     for junit in range(x_j.size):
 
-        sum_parz_w_kj = 0
-        # Somma tra tutti i delta[k] * e il peso corrispondente della matrice w_kj, fissato il nodo j (=junit) di destinazione 
-        for k in range(x_k.size):
-            sum_parz_w_kj += (delta_k[k] * w_kj[junit][k])
-        
-        # La Net del nodo j = x_j[junit]
-        dj[junit] = sum_parz_w_kj * fd(np.dot(x_i, w_ji[:, junit]))
+        net_j = np.dot(x_i, w_ji[:, junit])
+
+
+        sum_parz = 0
+
+
+        for kunit in range(delta_k.size):
+
+
+            sum_parz += delta_k[kunit] * w_kj[junit, kunit]
+
+
+        dj[junit] = sum_parz * fd(net_j)
 
     return dj
     
     
-def compute_delta_all_layers(d: Array1D, x_k: Array1D, w_kj: Array2D, x_j: Array1D, x_i: Array1D, w_ji: Array2D, fd: Callable) -> tuple[Array1D, Array1D]: 
 
+
+
+def compute_delta_all_layers(d: Array1D, x_k: Array1D, w_kj2: Array2D, x_j1: Array1D, w_j2j1: Array2D, x_j2: Array1D, w_j1i: Array2D, x_i: Array1D, fd: Callable) -> tuple[Array1D, Array1D, Array1D]:
     dk = delta_k(d, x_k)
-    return delta_j(x_i, w_ji, x_j, w_kj, dk, x_k, fd), dk
-        
+
+    dj2 = delta_j(x_j1, w_j2j1, x_j2, w_kj2, dk, x_k, fd)
+
+
+    dj1 = delta_j(x_i, w_j1i, x_j1, w_j2j1, dj2, x_j2, fd)
+
+
+    return dj1, dj2, dk        
 #def backprop_output(d: Array1D, x_k: Array1D, f_prime: function, w_kj: Array2D, x_j: Array1D,  ):
     """
     Calcola per ogni k che appartengono all'output layer su ogni nodo appartenente all'hidden layer precedente

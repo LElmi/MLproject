@@ -1,5 +1,5 @@
 import numpy as np
-from src.staticnn.activationf.sigm import sigmaf
+from src.activationf.sigmoid import sigmaf
 
 # Tipi utili per chiarezza
 Array2D = np.ndarray
@@ -19,9 +19,11 @@ def forward_hidden(x_i: Array1D, w_ji: Array2D) -> Array1D:
     n_hidden_units = w_ji.shape[1]
     x_j = np.zeros(n_hidden_units)
     #print("inside forward hidden, x_j.size: ", x_j.shape, "w_ji.shape: ", w_ji.shape)
-    for i in range(n_hidden_units):
-        x_j[i] = sigmaf(np.dot(x_i, w_ji[:, i]))
+    for junit in range(n_hidden_units):
+        x_j[junit] = sigmaf(np.dot(x_i, w_ji[:, junit]))
 
+    z_j = np.dot(w_ji.T, x_i)
+    x_j = sigmaf(z_j)
     return x_j
 
 
@@ -36,17 +38,24 @@ def forward_output(x_j: Array1D, w_kj: Array2D) -> Array1D:
     Ritorna:
         vettore predizioni
     """
-    n_outputs = w_kj.shape[1]
-    x_k = np.zeros(n_outputs)
+    # n_outputs = w_kj.shape[1]
+    # x_k = np.zeros(n_outputs)
 
-    for i in range(n_outputs):
-        x_k[i] = np.dot(x_j, w_kj[:, i])
+    # for i in range(n_outputs):
+    #    x_k[i] = np.dot(x_j, w_kj[:, i])
+
+    x_k = np.dot(w_kj.T, x_j)
 
     return x_k
 
     
     
-def forward_all_layers(x_i: Array1D, w_ji: Array2D, w_kj: Array2D) -> tuple[Array1D, Array1D]:
+def forward_all_layers(x_i: Array1D, w_j1i: Array2D,w_j2j1: Array2D, w_kj2: Array2D) -> tuple[Array1D, Array1D, Array1D]:
+    
+    x_j1 = forward_hidden(x_i, w_j1i)
 
-    x_j = forward_hidden(x_i, w_ji)
-    return forward_output(x_j, w_kj), x_j
+
+    x_j2 = forward_hidden(x_j1, w_j2j1)
+
+
+    return forward_output(x_j2, w_kj2), x_j2,x_j1
