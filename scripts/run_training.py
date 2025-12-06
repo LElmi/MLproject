@@ -49,7 +49,7 @@ def run_training() -> None:
     # ||||||||||||||||||||||            ONLINE          ||||||||||||||||||||||
     #"""
     #while True:
-    epochs = 5000
+    epochs = 100
     total_error_array = np.zeros(epochs)
     patterns = x_i.shape[0]
 
@@ -82,11 +82,11 @@ def run_training() -> None:
             MSE_k += (d[pattern] - x_k) ** 2
             print("pattern=", pattern, "\nx_k", x_k, "\ntargets=", d[pattern], "\ndelta_k=", dk)
 
-        MSE_k = MSE_k / patterns
+        MSE_k = np.sqrt(MSE_k) / patterns
         MSE_tot = 0
         for i in range(w_kj2.shape[1]):
             MSE_tot += MSE_k[i]
-        total_error = MSE_tot / patterns
+        total_error = MSE_tot / w_kj2.shape[1]
         total_error_array[epoch] = total_error
         print("!!! TOTAL ERROR: ", total_error, " !!!")
 
