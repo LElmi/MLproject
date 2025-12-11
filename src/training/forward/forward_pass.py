@@ -1,5 +1,6 @@
 import numpy as np
 from src.activationf.sigmoid import sigmaf
+from src.activationf.relu import relu
 
 # Tipi utili per chiarezza
 Array2D = np.ndarray
@@ -7,23 +8,30 @@ Array1D = np.ndarray
 
 def forward_hidden(x_i: Array1D, w_ji: Array2D) -> Array1D:
     """
-    Calcola l'output del hidden layer con act. func. sigma
+    Calcola l'output del hidden layer con act. func. sigma con array in ingresso x_i
     
     Args: 
-        X: vettore input (n_features)
-        W: matrice pesi (n_features, n_hidden)
-    
+        x_i: vettore input (n_features)
+        w_ji: matrice pesi (n_features (contiene il bias), n_hidden)
     Ritorna: 
         vettore attivazioni hidden layer (n_hidden)
     """
+
     n_hidden_units = w_ji.shape[1]
+    # Inizializza vettore risultato
     x_j = np.zeros(n_hidden_units)
+
     #print("inside forward hidden, x_j.size: ", x_j.shape, "w_ji.shape: ", w_ji.shape)
     for junit in range(n_hidden_units):
-        x_j[junit] = sigmaf(np.dot(x_i, w_ji[:, junit]))
+        
+        # Salta la prima riga essendo il bias, che non ha un x_i a cui essere moltiplicato
+        # il bias viene sommato successivamente il calcolo del prodotto scalare
+        net = np.dot(x_i, w_ji[1:, junit]) + w_ji[0][junit] # <- Aggiunge il bias
 
-    z_j = np.dot(w_ji.T, x_i)
-    x_j = sigmaf(z_j)
+        x_j[junit] = relu(net)
+
+    #z_j = np.dot(w_ji.T, x_i)
+    #x_j = relu(z_j)
     return x_j
 
 
@@ -33,18 +41,19 @@ def forward_output(x_j: Array1D, w_kj: Array2D) -> Array1D:
     
     Args:
         X1: vettore attivazioni hidden layer (n_hidden)
-        K: matrice pesi output (n_hidden, n_outputs)
+        K: matrice pesi output (n_hidden (compreso di bias), n_outputs)
     
     Ritorna:
         vettore predizioni
     """
-    # n_outputs = w_kj.shape[1]
-    # x_k = np.zeros(n_outputs)
+    n_outputs = w_kj.shape[1]
+    x_k = np.zeros(n_outputs)
 
-    # for i in range(n_outputs):
-    #    x_k[i] = np.dot(x_j, w_kj[:, i])
+    for kunit in range(n_outputs):
 
-    x_k = np.dot(w_kj.T, x_j)
+        x_k[kunit] = np.dot(x_j, w_kj[1:, kunit]) + w_kj[0][kunit] # <- Aggiunge il bias
+
+    #x_k = np.dot(w_kj.T, x_j)
 
     return x_k
 
@@ -58,4 +67,4 @@ def forward_all_layers(x_i: Array1D, w_j1i: Array2D,w_j2j1: Array2D, w_kj2: Arra
     x_j2 = forward_hidden(x_j1, w_j2j1)
 
 
-    return forward_output(x_j2, w_kj2), x_j2,x_j1
+    return forward_output(x_j2, w_kj2), x_j2, x_j1

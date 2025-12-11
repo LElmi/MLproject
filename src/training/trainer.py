@@ -27,8 +27,8 @@ class Trainer:
                  n_hidden1: int = 64,
                  n_hidden2: int = 32,
                  n_outputs: int = 4,
-                 learning_rate: float = 0.0025,
-                 epochs: int = 100):
+                 learning_rate: float = 0.000025,
+                 epochs: int = 500):
         
         self.epochs = epochs
         #self.stopping_criteria = stopping_criteria
@@ -52,6 +52,9 @@ class Trainer:
         self.mee_error_history = np.zeros(self.epochs)
         self.mse_error_history = np.zeros(self.epochs)
 
+
+        total_error_array = np.zeros(self.epochs)  ## 
+
         #total_error_array = np.zeros(self.epochs)
 
         print(f"Inizio training...")
@@ -61,6 +64,10 @@ class Trainer:
             shuffled_indeces = np.random.permutation(patterns)
             mee_pattern_error = 0.0
             mse_pattern_error = 0.0 
+
+
+            total_error = np.zeros(self.neuraln.w_kj2.shape[1]) 
+            MSE_k = np.zeros(self.neuraln.w_kj2.shape[1])
 
             print("... epoch ", epoch, " ...")
 
@@ -87,6 +94,9 @@ class Trainer:
 
                 self.neuraln.update_weights(dk, dj2, dj1, x_i)
 
+               # print("size d: ", d.shape, "self.neuraln.x_k shape", self.neuraln.x_k.shape)
+                MSE_k += (d - self.neuraln.x_k) ** 2
+
             mean_epoch_mee_error = mee_pattern_error / patterns
             mean_epoch_mse_error = mse_pattern_error / patterns
 
@@ -94,9 +104,20 @@ class Trainer:
             self.mse_error_history[epoch] = mean_epoch_mse_error
 
 
+            
+            MSE_k = np.sqrt(MSE_k) / patterns
+            MSE_tot = 0
+            for i in range(self.neuraln.w_kj2.shape[1]):
+                MSE_tot += MSE_k[i]
+            total_error = MSE_tot / self.neuraln.w_kj2.shape[1]
+            total_error_array[epoch] = total_error
+            print("!!! TOTAL ERROR: ", total_error, " !!!")
+
+
+
+
         print("!!! TOTAL MEE ERROR: ", mean_epoch_mee_error, " !!!") 
         print("!!! TOTAL MSE ERROR: ", mean_epoch_mse_error, " !!!") 
-
 
 
 
@@ -106,4 +127,9 @@ class Trainer:
         plt.show()
 
         plt.plot(ep, self.mse_error_history)
+        plt.show()
+
+
+
+        plt.plot(ep, total_error_array)
         plt.show()

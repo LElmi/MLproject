@@ -5,6 +5,16 @@ from src.training.forward.forward_pass import  forward_all_layers
 Array2D = np.ndarray
 Array1D = np.ndarray
 
+def add_bias(x: Array2D) -> Array1D:
+    """ 
+    Aggiunge il bias, in testa alla matrice dei pesi, 
+    come vettore di 1 lungo quanti i nodi nel layer di destinazione
+    """
+    # Vettore di 1
+    bias_row = np.ones((1, x.shape[1]))
+
+    return np.concatenate((bias_row, x), axis=0)
+
 """
 Cose da considerare:
 
@@ -37,7 +47,7 @@ class NN:
                  n_hidden1: int = 64,
                  n_hidden2: int = 32,
                  n_outputs: int = 4,
-                 learning_rate: float = 0.00000025):
+                 learning_rate: float = 0.000025):
         
         """
         Costruttore della rete neurale 
@@ -54,56 +64,55 @@ class NN:
             learning_rate : eta
         """
 
-        self.n_inputs = n_inputs + 1   # Aggiunge il bias
+        self.n_inputs = n_inputs   # Aggiunge il bias
         self.n_hidden1 = n_hidden1
         self.n_hidden2 = n_hidden2
         self.n_outputs = n_outputs
         self.learning_rate = learning_rate
 
-        # Aggiunge il bias che deve essere aggiunto come un valore (= 1) in più sul vettore x -> x_0 (= 1) + x_1 + .... + x_n
-        input_size = n_inputs + 1
-
         # Inizializza i pesi, prima implementazione le crea staticamente
-        self.w_j1i = np.random.randn(n_inputs, n_hidden1) * np.sqrt(2.0 / input_size)
+        self.w_j1i = np.random.randn(self.n_inputs, n_hidden1) * np.sqrt(2.0 / n_inputs)
         self.w_j2j1 = np.random.randn(n_hidden1, n_hidden2) * np.sqrt(2.0 / n_hidden1)
         self.w_kj2 = np.random.randn(n_hidden2, n_outputs) * np.sqrt(2.0 / n_hidden2)
- 
+
+        self.w_j1i = add_bias(self.w_j1i)
+        self.w_j2j1 = add_bias(self.w_j2j1)
+        self.w_kj2 = add_bias(self.w_kj2)
+
         self.x_j1  =  0
         self.x_j2  =  0
         self.x_k   =  0
 
     def update_weights(self,
-                       dk: Array1D,
-                       dj2: Array1D,
-                       dj1: Array1D,
-                       x_pattern: Array1D):
+                    dk: Array1D,
+                    dj2: Array1D,
+                    dj1: Array1D,
+                    x_pattern: Array1D):
         
-        """
-        Metodo che aggiorna i pesi della rete usando il gradient descent (da modularizzare?)
-        
-        Args:
-            dk: Delta dell'output layer
-            dj2: Delta del secondo hidden layer
-            dj1: Delta del primo hidden layer
-            x_pattern: Input del pattern
-        
-        Returns:
-            Nulla, le modifiche sono fatte in locale
-        """
-        
-        for kunit in range (self.w_kj2.shape[1]):
-            for junit in range (self.w_kj2.shape[0]):
+        # --- 1. Aggiornamento Pesi Output (w_kj2) ---
+        for kunit in range(self.w_kj2.shape[1]):
 
-                self.w_kj2[junit, kunit] += self.learning_rate * dk[kunit] * self.x_j2[junit]
+            # Aggiorna Bias (Riga 0)
+            self.w_kj2[0][kunit] += self.learning_rate * dk[kunit] 
 
+            for junit in range(self.w_kj2.shape[0] - 1): 
+                self.w_kj2[junit + 1, kunit] += self.learning_rate * dk[kunit] * self.x_j2[junit]
+                
+
+        # --- 2. Aggiornamento Pesi Hidden 2 (w_j2j1) ---
         for j2unit in range(self.w_j2j1.shape[1]):
-            for j1unit in range(self.w_j2j1.shape[0]):
-                self.w_j2j1[j1unit, j2unit] += self.learning_rate * dj2[j2unit] * self.x_j1[j1unit]
+            self.w_j2j1[0][j2unit] += self.learning_rate * dj2[j2unit] 
 
-        for j1unit in range (self.w_j1i.shape[1]):
-            for iunit in range (self.w_j1i.shape[0]):
+            for j1unit in range(self.w_j2j1.shape[0] - 1):
+                self.w_j2j1[j1unit + 1, j2unit] += self.learning_rate * dj2[j2unit] * self.x_j1[j1unit]
+        
 
-                self.w_j1i[iunit, j1unit] += self.learning_rate * dj1[j1unit] * x_pattern[iunit]     
+        # --- 3. Aggiornamento Pesi Hidden 1 (w_j1i) ---
+        for j1unit in range(self.w_j1i.shape[1]):
+            self.w_j1i[0][j1unit] += self.learning_rate * dj1[j1unit] 
+            
+            for iunit in range(self.w_j1i.shape[0] - 1):
+                self.w_j1i[iunit + 1, j1unit] += self.learning_rate * dj1[j1unit] * x_pattern[iunit]
 
     
     def forward(self, x_pattern: Array1D) -> tuple[Array1D, Array1D, Array1D]:
@@ -119,5 +128,13 @@ class NN:
             x_k   = Vettore risultato output layer
         """
 
-        self.x_k, self.x_j2, self.x_j1 = forward_all_layers(x_pattern, self.w_j1i, self.w_j2j1, self.w_kj2)
+        #x_biased = self.add_bias(x_pattern)
+
+        self.x_k, self.x_j2, self.x_j1 = forward_all_layers(
+            x_pattern,
+            self.w_j1i,
+            self.w_j2j1,
+            self.w_kj2
+        )
+
         return self.x_k, self.x_j2, self.x_j1

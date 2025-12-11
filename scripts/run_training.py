@@ -15,4 +15,4 @@ d = d.to_numpy()
 trainer = Trainer(x_i.shape[1])
 
 # Avvio training (grazie a __call__)
-trainer.train(x_i, d, dfunact=dsigmaf)
+trainer.train(x_i, d, dfunact=relu_deriv)

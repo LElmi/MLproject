@@ -34,7 +34,7 @@ def delta_k(d: Array1D, x_k: Array1D) -> Array1D:
 
 def delta_j(x_i: Array1D, w_ji: Array2D, x_j: Array1D, w_kj: Array2D, delta_k: Array1D, x_k: Array1D, fd: Callable) -> Array1D:
     """
-    Funzione che calcola il vettore delta_j corrispondente all'hiddent layer
+    Funzione che calcola il vettore delta_j corrispondente all'hidden layer
     
     Args: 
         x_j: vettore hidden layer
@@ -47,24 +47,19 @@ def delta_j(x_i: Array1D, w_ji: Array2D, x_j: Array1D, w_kj: Array2D, delta_k: A
         dj: vettore dei delta j
     """
     # Inizializza vettore delta j vuoto
-    dj = np.zeros(x_j.size)
 
-    
-    for junit in range(x_j.size):
+    n_junits = x_j.size
+    dj = np.zeros(n_junits)
 
-        net_j = np.dot(x_i, w_ji[:, junit])
+    for junit in range(n_junits):
 
+        net_j = np.dot(x_i, w_ji[1:, junit]) + w_ji[0][junit] # <- Aggiunge il bias
+        sommatoria_sui_dk = np.dot(delta_k, w_kj[junit + 1, :]) # <- Salta la prima riga dei bias
 
-        sum_parz = 0
+        #for kunit in range(delta_k.size):
+        #    sum_parz += delta_k[kunit] * w_kj[junit, kunit]
 
-
-        for kunit in range(delta_k.size):
-
-
-            sum_parz += delta_k[kunit] * w_kj[junit, kunit]
-
-
-        dj[junit] = sum_parz * fd(net_j)
+        dj[junit] = sommatoria_sui_dk * fd(net_j)
 
     return dj
     
@@ -82,17 +77,3 @@ def compute_delta_all_layers(d: Array1D, x_k: Array1D, w_kj2: Array2D, x_j1: Arr
 
 
     return dj1, dj2, dk        
-#def backprop_output(d: Array1D, x_k: Array1D, f_prime: function, w_kj: Array2D, x_j: Array1D,  ):
-    """
-    Calcola per ogni k che appartengono all'output layer su ogni nodo appartenente all'hidden layer precedente
-
-    Args:
-        x_k: vettore output layer
-        w_kj: matrice dei pesi tra l'ultimo hidden layer e l'otput layer
-        x_j: vettore hidden layer
-
-    Ritorna:
-        matrice k aggiornata
-    """
-
-#def backprop_hidden()
