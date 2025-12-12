@@ -1,5 +1,5 @@
 import numpy as np
-from src.activationf.sigmoid import sigmaf
+# from src.activationf.sigmoid import sigmaf
 from src.activationf.relu import relu
 
 # Tipi utili per chiarezza
@@ -21,6 +21,12 @@ def forward_hidden(x_i: Array1D, w_ji: Array2D) -> Array1D:
     # Inizializza vettore risultato
     x_j = np.zeros(n_hidden_units)
 
+    # Salta la prima riga essendo il bias, che non ha un x_i a cui essere moltiplicato
+    # il bias viene sommato successivamente il calcolo del prodotto scalare
+    net = np.dot(x_i, w_ji[1:]) + w_ji[0] # <- Vettorializzata
+    x_j = relu(net)
+
+    """ Versione non vettorializzata
     #print("inside forward hidden, x_j.size: ", x_j.shape, "w_ji.shape: ", w_ji.shape)
     for junit in range(n_hidden_units):
         
@@ -32,6 +38,8 @@ def forward_hidden(x_i: Array1D, w_ji: Array2D) -> Array1D:
 
     #z_j = np.dot(w_ji.T, x_i)
     #x_j = relu(z_j)
+
+    """
     return x_j
 
 
@@ -49,11 +57,16 @@ def forward_output(x_j: Array1D, w_kj: Array2D) -> Array1D:
     n_outputs = w_kj.shape[1]
     x_k = np.zeros(n_outputs)
 
+
+    x_k = np.dot(x_j, w_kj[1:]) + w_kj[0] # <- Vettorializzata
+
+    """ Non vettorializzata
     for kunit in range(n_outputs):
 
         x_k[kunit] = np.dot(x_j, w_kj[1:, kunit]) + w_kj[0][kunit] # <- Aggiunge il bias
 
     #x_k = np.dot(w_kj.T, x_j)
+    """
 
     return x_k
 

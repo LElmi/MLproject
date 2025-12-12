@@ -1,11 +1,13 @@
 # MAIN PROGETTO ML
 
 import numpy as np
-import matplotlib.pyplot as plt
+import time
 from src.nn.nn import NN
 from src.training.forward.forward_pass import *
-from src.activationf.sigmoid import *
+#from src.activationf.sigmoid import *
 from src.training.backward.backprop import *
+from src.utils import visualization as vs
+#from tqdm import tqdm # Barra di progressione
 
 
 # Tipi utili per chiarezza
@@ -28,7 +30,7 @@ class Trainer:
                  n_hidden2: int = 32,
                  n_outputs: int = 4,
                  learning_rate: float = 0.000025,
-                 epochs: int = 500):
+                 epochs: int = 3000):
         
         self.epochs = epochs
         #self.stopping_criteria = stopping_criteria
@@ -41,8 +43,9 @@ class Trainer:
                         n_outputs, 
                         learning_rate)
         
-        self.mee_error_history = []
+        self.mee_error_history = [] # <- Quella per la CUP, meno sensibile agli outliers
         self.mse_error_history = []
+        # self.total_error_array = []
 
 
     def train(self, input_matrix, d_matrix, dfunact: Callable):
@@ -51,12 +54,13 @@ class Trainer:
         # Inizializza il vettore dove ogni elemento è la sommatoria degli errori dei pattern per epoca
         self.mee_error_history = np.zeros(self.epochs)
         self.mse_error_history = np.zeros(self.epochs)
+        # self.total_error_array = np.zeros(self.epochs)  ## 
 
 
-        total_error_array = np.zeros(self.epochs)  ## 
 
         #total_error_array = np.zeros(self.epochs)
 
+        start_time = time.perf_counter()
         print(f"Inizio training...")
 
         for epoch in range(self.epochs):
@@ -66,10 +70,8 @@ class Trainer:
             mse_pattern_error = 0.0 
 
 
-            total_error = np.zeros(self.neuraln.w_kj2.shape[1]) 
-            MSE_k = np.zeros(self.neuraln.w_kj2.shape[1])
-
-            print("... epoch ", epoch, " ...")
+            # total_error = np.zeros(self.neuraln.w_kj2.shape[1]) 
+            # MSE_k = np.zeros(self.neuraln.w_kj2.shape[1])
 
             for idx_pattern in shuffled_indeces:
                 
@@ -91,11 +93,11 @@ class Trainer:
 
                 mee_pattern_error += (np.sum((d - self.neuraln.x_k) ** 2)) ** 0.5
                 mse_pattern_error += (np.sum((d - self.neuraln.x_k) ** 2))
+                # MSE_k += (d - self.neuraln.x_k) ** 2
 
                 self.neuraln.update_weights(dk, dj2, dj1, x_i)
 
                # print("size d: ", d.shape, "self.neuraln.x_k shape", self.neuraln.x_k.shape)
-                MSE_k += (d - self.neuraln.x_k) ** 2
 
             mean_epoch_mee_error = mee_pattern_error / patterns
             mean_epoch_mse_error = mse_pattern_error / patterns
@@ -104,32 +106,35 @@ class Trainer:
             self.mse_error_history[epoch] = mean_epoch_mse_error
 
 
+            # dà un'idea dell'errore medio per ogni neurono di output,
+            # ora  potrebbe essere utile per identificare quali output della rete hanno più difficoltà nell'apprendimento
+            # accumula gli errori quadratici di ogni output
+            # commentato momentaneamente per performance
             
-            MSE_k = np.sqrt(MSE_k) / patterns
-            MSE_tot = 0
-            for i in range(self.neuraln.w_kj2.shape[1]):
-                MSE_tot += MSE_k[i]
-            total_error = MSE_tot / self.neuraln.w_kj2.shape[1]
-            total_error_array[epoch] = total_error
-            print("!!! TOTAL ERROR: ", total_error, " !!!")
+            #MSE_k = np.sqrt(MSE_k) / patterns
+            #MSE_tot = 0
+            #for i in range(self.neuraln.w_kj2.shape[1]):
+            #    MSE_tot += MSE_k[i]
+            #total_error = MSE_tot / self.neuraln.w_kj2.shape[1]
+            #self.total_error_array[epoch] = total_error
+            
+
+            print("|| epooch n° ", epoch, ", total mee error: ", mean_epoch_mee_error, " ||")
+
+
+        tempo_di_training = time.perf_counter() - start_time
+
+
+        print(" Total mee error: ", mean_epoch_mee_error) 
+        print(" Total mse error: ", mean_epoch_mse_error) 
+        print(" Tempo di training: ", tempo_di_training)
 
 
 
+        print("\n--- Training Completato ---\n")
+                
+        # Genera il vettore delle epoche (X-axis)
+        epoche = np.arange(self.epochs) # Usa np.arange per coerenza
 
-        print("!!! TOTAL MEE ERROR: ", mean_epoch_mee_error, " !!!") 
-        print("!!! TOTAL MSE ERROR: ", mean_epoch_mse_error, " !!!") 
-
-
-
-        ep = [ x for x in range(self.epochs) ]
-
-        plt.plot(ep, self.mee_error_history)
-        plt.show()
-
-        plt.plot(ep, self.mse_error_history)
-        plt.show()
-
-
-
-        plt.plot(ep, total_error_array)
-        plt.show()
+        vs.plot_errors(self, epoche, tempo_di_training)
+        # self.plot_errors_separate(epoche) # Se preferisci grafici separati

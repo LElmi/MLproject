@@ -70,10 +70,22 @@ class NN:
         self.n_outputs = n_outputs
         self.learning_rate = learning_rate
 
-        # Inizializza i pesi, prima implementazione le crea staticamente
+
+        """
+        std_dev = np.sqrt(2 / n_inputs)
+        self.w_j1i = np.random.normal(0, std_dev, size=(self.n_inputs, n_hidden1))
+
+        std_dev = np.sqrt(2 / n_hidden1)
+        self.w_j2j1 = np.random.normal(0, std_dev, size=(n_hidden1, n_hidden2))
+
+        std_dev = np.sqrt(2 / n_hidden2)
+        self.w_kj2 = np.random.normal(0, std_dev, size=(n_hidden2, n_outputs))
+        """
+        
         self.w_j1i = np.random.randn(self.n_inputs, n_hidden1) * np.sqrt(2.0 / n_inputs)
         self.w_j2j1 = np.random.randn(n_hidden1, n_hidden2) * np.sqrt(2.0 / n_hidden1)
         self.w_kj2 = np.random.randn(n_hidden2, n_outputs) * np.sqrt(2.0 / n_hidden2)
+        
 
         self.w_j1i = add_bias(self.w_j1i)
         self.w_j2j1 = add_bias(self.w_j2j1)
@@ -89,32 +101,65 @@ class NN:
                     dj1: Array1D,
                     x_pattern: Array1D):
         
-        # --- 1. Aggiornamento Pesi Output (w_kj2) ---
+        # --- Aggiornamento Pesi Output (w_kj2) - Versione vettorializzata ---
+        
+        # Prende tutta la riga 0 e viene sommata con il vettore dk moltiplicato per lo scalare lear.rate
+        # Aggiorna il bias
+        self.w_kj2[0] += self.learning_rate * dk # Versione vettorializzata
+
+        # Il metodo outer restituisce una matrice con shape (self.x_j2, dk), e deve coincidere con
+        #   la matrice che sta aggiornando, in questo caso saltando la riga dei bias precedentemente
+        #   aggiornata.
+        self.w_kj2[1:, :] += self.learning_rate * np.outer(self.x_j2, dk)
+
+
+        # --- Aggiornamento Pesi Output (w_kj2) - Versione non vettorializzata ---
+
+        """
         for kunit in range(self.w_kj2.shape[1]):
 
             # Aggiorna Bias (Riga 0)
             self.w_kj2[0][kunit] += self.learning_rate * dk[kunit] 
 
             for junit in range(self.w_kj2.shape[0] - 1): 
+                print("shape dk: ", dk.shape, "shape x_j2 :", self.x_j2.shape)
                 self.w_kj2[junit + 1, kunit] += self.learning_rate * dk[kunit] * self.x_j2[junit]
-                
+        """ 
 
-        # --- 2. Aggiornamento Pesi Hidden 2 (w_j2j1) ---
+        # --- Aggiornamento Pesi Hidden 2 (w_j2j1) - Versione vettorializzata ---
+
+        self.w_j2j1[0] += self.learning_rate * dj2
+
+        self.w_j2j1[1:, :] += self.learning_rate * np.outer(self.x_j1, dj2)
+
+
+        # --- Aggiornamento Pesi Hidden 2 (w_j2j1) - Versione non vettorializzata ---
+        
+        """
         for j2unit in range(self.w_j2j1.shape[1]):
             self.w_j2j1[0][j2unit] += self.learning_rate * dj2[j2unit] 
 
             for j1unit in range(self.w_j2j1.shape[0] - 1):
                 self.w_j2j1[j1unit + 1, j2unit] += self.learning_rate * dj2[j2unit] * self.x_j1[j1unit]
-        
+        """
 
-        # --- 3. Aggiornamento Pesi Hidden 1 (w_j1i) ---
+        # --- Aggiornamento Pesi Hidden 1 (w_j1i) Versione vettorializzata ---
+
+        self.w_j1i[0] += self.learning_rate * dj1
+
+        self.w_j1i[1:, :] += self.learning_rate * np.outer(x_pattern, dj1)
+
+        # --- Aggiornamento Pesi Hidden 1 (w_j1i) Versione non vettorializzata ---
+
+        """
         for j1unit in range(self.w_j1i.shape[1]):
             self.w_j1i[0][j1unit] += self.learning_rate * dj1[j1unit] 
             
             for iunit in range(self.w_j1i.shape[0] - 1):
                 self.w_j1i[iunit + 1, j1unit] += self.learning_rate * dj1[j1unit] * x_pattern[iunit]
 
-    
+        """
+
     def forward(self, x_pattern: Array1D) -> tuple[Array1D, Array1D, Array1D]:
         """
         Forward pass su tutta la rete per un **singolo pattern!**

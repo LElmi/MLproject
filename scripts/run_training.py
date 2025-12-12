@@ -3,7 +3,7 @@ from src.training import trainer
 
 from src.training.trainer import Trainer
 from src.utils.load_data import load_data
-from src.activationf.sigmoid import dsigmaf
+# from src.activationf.sigmoid import dsigmaf
 from src.activationf.relu import relu_deriv
 
 # Carico dati
