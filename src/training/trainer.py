@@ -4,7 +4,8 @@ import numpy as np
 import time
 from src.nn.nn import NN
 from src.training.forward.forward_pass import *
-#from src.activationf.sigmoid import *
+from src.activationf.relu import relu
+from src.activationf.sigmoid import sigmaf
 from src.training.backward.backprop import *
 from src.utils import visualization as vs
 #from tqdm import tqdm # Barra di progressione
@@ -26,13 +27,15 @@ class Trainer:
 
     def __init__ (self,
                  input_size: int,
-                 n_hidden1: int = 64,
-                 n_hidden2: int = 32,
-                 n_outputs: int = 4,
-                 learning_rate: float = 0.000025,
-                 epochs: int = 3000):
+                 n_hidden1: int,
+                 n_hidden2: int,
+                 n_outputs: int,
+                 f_act: Callable,
+                 learning_rate: float,
+                 epochs: int):
         
         self.epochs = epochs
+        self.f_act = f_act
         #self.stopping_criteria = stopping_criteria
 
         # Inizializza la rete neurale
@@ -41,6 +44,7 @@ class Trainer:
                         n_hidden1, 
                         n_hidden2, 
                         n_outputs, 
+                        f_act,
                         learning_rate)
         
         self.mee_error_history = [] # <- Quella per la CUP, meno sensibile agli outliers
@@ -48,7 +52,7 @@ class Trainer:
         # self.total_error_array = []
 
 
-    def train(self, input_matrix, d_matrix, dfunact: Callable):
+    def train(self, input_matrix, d_matrix):
 
         patterns = input_matrix.shape[0]
         # Inizializza il vettore dove ogni elemento è la sommatoria degli errori dei pattern per epoca
@@ -88,7 +92,7 @@ class Trainer:
                                                 self.neuraln.x_j2,
                                                 self.neuraln.w_j1i,
                                                 x_i,
-                                                dfunact
+                                                self.f_act
                                             )
 
                 mee_pattern_error += (np.sum((d - self.neuraln.x_k) ** 2)) ** 0.5

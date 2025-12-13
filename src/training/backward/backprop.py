@@ -38,7 +38,7 @@ def delta_k(d: Array1D, x_k: Array1D) -> Array1D:
 
 
 
-def delta_j(x_i: Array1D, w_ji: Array2D, x_j: Array1D, w_kj: Array2D, delta_k: Array1D, x_k: Array1D, fd: Callable) -> Array1D:
+def delta_j(x_i: Array1D, w_ji: Array2D, x_j: Array1D, w_kj: Array2D, delta_k: Array1D, x_k: Array1D, df_act: Callable) -> Array1D:
     """
     Funzione che calcola il vettore delta_j corrispondente all'hidden layer
     
@@ -65,7 +65,8 @@ def delta_j(x_i: Array1D, w_ji: Array2D, x_j: Array1D, w_kj: Array2D, delta_k: A
         #for kunit in range(delta_k.size):
         #    sum_parz += delta_k[kunit] * w_kj[junit, kunit]
 
-        dj[junit] = sommatoria_sui_dk * fd(net_j)
+        # La f_act ha un parametro aggiuntivo, se True, ritorna la derivata della funzione
+        dj[junit] = sommatoria_sui_dk * df_act(net_j, True)
 
     return dj
     

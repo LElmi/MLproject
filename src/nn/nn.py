@@ -1,6 +1,8 @@
 import numpy as np
 from src.training.forward.forward_pass import  forward_all_layers
+from src.activationf.relu import relu
 
+from typing import Callable
 # Tipi utili per chiarezza
 Array2D = np.ndarray
 Array1D = np.ndarray
@@ -44,10 +46,11 @@ class NN:
 
     def __init__(self,
                  n_inputs: int,
-                 n_hidden1: int = 64,
-                 n_hidden2: int = 32,
-                 n_outputs: int = 4,
-                 learning_rate: float = 0.000025):
+                 n_hidden1: int,
+                 n_hidden2: int,
+                 n_outputs: int,
+                 f_act: Callable,
+                 learning_rate: float):
         
         """
         Costruttore della rete neurale 
@@ -67,7 +70,8 @@ class NN:
         self.n_inputs = n_inputs   # Aggiunge il bias
         self.n_hidden1 = n_hidden1
         self.n_hidden2 = n_hidden2
-        self.n_outputs = n_outputs
+        self.n_outputs = n_outputs  
+        self.f_act = f_act          # Legata agli hidden layer
         self.learning_rate = learning_rate
 
 
@@ -179,7 +183,8 @@ class NN:
             x_pattern,
             self.w_j1i,
             self.w_j2j1,
-            self.w_kj2
+            self.w_kj2,
+            self.f_act
         )
 
         return self.x_k, self.x_j2, self.x_j1
