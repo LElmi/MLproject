@@ -4,11 +4,8 @@ import numpy as np
 import time
 from src.nn.nn import NN
 from src.training.forward.forward_pass import *
-from src.activationf.relu import relu
-from src.activationf.sigmoid import sigmaf
 from src.training.backward.backprop import *
 from src.utils import visualization as vs
-#from tqdm import tqdm # Barra di progressione
 
 
 # Tipi utili per chiarezza
@@ -32,10 +29,13 @@ class Trainer:
                  n_outputs: int,
                  f_act: Callable,
                  learning_rate: float,
+                 batch: bool,
                  epochs: int):
         
-        self.epochs = epochs
+
         self.f_act = f_act
+        self.batch = batch
+        self.epochs = epochs
         #self.stopping_criteria = stopping_criteria
 
         # Inizializza la rete neurale
@@ -69,40 +69,91 @@ class Trainer:
 
         for epoch in range(self.epochs):
 
-            shuffled_indeces = np.random.permutation(patterns)
             mee_pattern_error = 0.0
             mse_pattern_error = 0.0 
 
 
             # total_error = np.zeros(self.neuraln.w_kj2.shape[1]) 
             # MSE_k = np.zeros(self.neuraln.w_kj2.shape[1])
+            """
+            La meglio è far gestire a trainer la scelta di quando fare l'update weights:
+                - Nel caso dell'online l'update weights viene chiamato ad ogni pattern
+                - Nel caso del batch l'update weights accumula delta_j1 * x_i, delta_j2 * x_j1, delta_k * x_j2
+            """
 
-            for idx_pattern in shuffled_indeces:
+            if self.batch == False:
+            
+                shuffled_indeces = np.random.permutation(patterns)
+
+
+                for idx_pattern in shuffled_indeces:
+                    
+                    x_i = input_matrix[idx_pattern]
+                    d = d_matrix[idx_pattern]
+                    self.neuraln.forward(input_matrix[idx_pattern])
+                        
+                    mee_pattern_error += (np.sum((d - self.neuraln.x_k) ** 2)) ** 0.5
+                    mse_pattern_error += (np.sum((d - self.neuraln.x_k) ** 2))
+
+                    delta_wk_pattern, delta_wj2j1_pattern, delta_wj1i_pattern = compute_delta_all_layers(
+                                                                                        d,
+                                                                                        self.neuraln.x_k,
+                                                                                        self.neuraln.w_kj2, 
+                                                                                        self.neuraln.x_j2,
+                                                                                        self.neuraln.w_j2j1,
+                                                                                        self.neuraln.x_j1,
+                                                                                        self.neuraln.w_j1i,
+                                                                                        x_i,
+                                                                                        self.f_act
+                                                                                    )
+                                    
+                    #print(delta_wk)
+                    # MSE_k += (d - self.neuraln.x_k) ** 2
+                    self.neuraln.update_weights(delta_wk_pattern, delta_wj2j1_pattern, delta_wj1i_pattern)
+
+            
+            else: 
+                delta_wk_epoch = np.zeros_like(self.neuraln.w_kj2)
+                delta_wj2j1_epoch = np.zeros_like(self.neuraln.w_j2j1)
+                delta_wj1i_epoch = np.zeros_like(self.neuraln.w_j1i)
+
+                for idx_pattern in range(patterns):
+                    
+
+                    x_i = input_matrix[idx_pattern]
+                    d = d_matrix[idx_pattern]
+                    self.neuraln.forward(input_matrix[idx_pattern])
+                        
+                    mee_pattern_error += (np.sum((d - self.neuraln.x_k) ** 2)) ** 0.5
+                    mse_pattern_error += (np.sum((d - self.neuraln.x_k) ** 2))
+
+                    delta_wk_pattern, delta_wj2j1_pattern, delta_wj1i_pattern = compute_delta_all_layers(
+                                                                                        d,
+                                                                                        self.neuraln.x_k,
+                                                                                        self.neuraln.w_kj2, 
+                                                                                        self.neuraln.x_j2,
+                                                                                        self.neuraln.w_j2j1,
+                                                                                        self.neuraln.x_j1,
+                                                                                        self.neuraln.w_j1i,
+                                                                                        x_i,
+                                                                                        self.f_act
+                                                                                    )
+                                    
+                    delta_wk_epoch    += delta_wk_pattern
+                    delta_wj2j1_epoch += delta_wj2j1_pattern
+                    delta_wj1i_epoch  += delta_wj1i_pattern   
+                    
+                    # MSE_k += (d - self.neuraln.x_k) ** 2
+
+                delta_wk_epoch    /= patterns
+                delta_wj2j1_epoch /= patterns
+                delta_wj1i_epoch  /= patterns  
                 
-                x_i = input_matrix[idx_pattern]
-                d = d_matrix[idx_pattern]
-                self.neuraln.forward(input_matrix[idx_pattern])
-
-                dj1, dj2, dk = compute_delta_all_layers(
-                                                d,
-                                                self.neuraln.x_k,
-                                                self.neuraln.w_kj2, 
-                                                self.neuraln.x_j1,
-                                                self.neuraln.w_j2j1,
-                                                self.neuraln.x_j2,
-                                                self.neuraln.w_j1i,
-                                                x_i,
-                                                self.f_act
-                                            )
-
-                mee_pattern_error += (np.sum((d - self.neuraln.x_k) ** 2)) ** 0.5
-                mse_pattern_error += (np.sum((d - self.neuraln.x_k) ** 2))
-                # MSE_k += (d - self.neuraln.x_k) ** 2
-
-                self.neuraln.update_weights(dk, dj2, dj1, x_i)
-
-               # print("size d: ", d.shape, "self.neuraln.x_k shape", self.neuraln.x_k.shape)
-
+                self.neuraln.update_weights(delta_wk_epoch, 
+                                            delta_wj2j1_epoch, 
+                                            delta_wj1i_epoch)
+                
+            
             mean_epoch_mee_error = mee_pattern_error / patterns
             mean_epoch_mse_error = mse_pattern_error / patterns
 

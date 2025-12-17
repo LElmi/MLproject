@@ -21,8 +21,11 @@ FUN_ACT = relu
 
 
 # ====== LEARNING RATE =======
-LEARNING_RATE = 0.000025
+#LEARNING_RATE = 0.003.   <- Funziona in batch ma da applicare il criterio di stop sennò scavalca il minimo
+#LEARNING_RATE = 0.000025
 
+# ========= BATCH ============
+BATCH = False
 
 # ======== N EPOCHS ==========
 EPOCHS = 1500

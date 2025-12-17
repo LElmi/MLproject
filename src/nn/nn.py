@@ -7,7 +7,7 @@ from typing import Callable
 Array2D = np.ndarray
 Array1D = np.ndarray
 
-def add_bias(x: Array2D) -> Array1D:
+def add_bias(x: Array2D) -> Array2D:
     """ 
     Aggiunge il bias, in testa alla matrice dei pesi, 
     come vettore di 1 lungo quanti i nodi nel layer di destinazione
@@ -67,7 +67,7 @@ class NN:
             learning_rate : eta
         """
 
-        self.n_inputs = n_inputs   # Aggiunge il bias
+        self.n_inputs = n_inputs  
         self.n_hidden1 = n_hidden1
         self.n_hidden2 = n_hidden2
         self.n_outputs = n_outputs  
@@ -75,16 +75,16 @@ class NN:
         self.learning_rate = learning_rate
 
 
-        """
-        std_dev = np.sqrt(2 / n_inputs)
-        self.w_j1i = np.random.normal(0, std_dev, size=(self.n_inputs, n_hidden1))
+        
+        #std_dev = np.sqrt(2 / n_inputs)
+        #self.w_j1i = np.random.normal(0, std_dev, size=(self.n_inputs, n_hidden1))
 
-        std_dev = np.sqrt(2 / n_hidden1)
-        self.w_j2j1 = np.random.normal(0, std_dev, size=(n_hidden1, n_hidden2))
+        #std_dev = np.sqrt(2 / n_hidden1)
+        #self.w_j2j1 = np.random.normal(0, std_dev, size=(n_hidden1, n_hidden2))
 
-        std_dev = np.sqrt(2 / n_hidden2)
-        self.w_kj2 = np.random.normal(0, std_dev, size=(n_hidden2, n_outputs))
-        """
+        #std_dev = np.sqrt(2 / n_hidden2)
+        #self.w_kj2 = np.random.normal(0, std_dev, size=(n_hidden2, n_outputs))
+        
         
         self.w_j1i = np.random.randn(self.n_inputs, n_hidden1) * np.sqrt(2.0 / n_inputs)
         self.w_j2j1 = np.random.randn(n_hidden1, n_hidden2) * np.sqrt(2.0 / n_hidden1)
@@ -99,23 +99,26 @@ class NN:
         self.x_j2  =  0
         self.x_k   =  0
 
+    # Adesso prende come argomento matrici a cui poi applica quello che deve applicare
+
     def update_weights(self,
-                    dk: Array1D,
-                    dj2: Array1D,
-                    dj1: Array1D,
-                    x_pattern: Array1D):
+                    delta_wk: Array2D,
+                    delta_wj2j1: Array1D,
+                    delta_wj1i: Array1D):
         
+        # ONLINE
         # --- Aggiornamento Pesi Output (w_kj2) - Versione vettorializzata ---
         
         # Prende tutta la riga 0 e viene sommata con il vettore dk moltiplicato per lo scalare lear.rate
         # Aggiorna il bias
-        self.w_kj2[0] += self.learning_rate * dk # Versione vettorializzata
+        #self.w_kj2[0] += self.learning_rate * dk # Versione vettorializzata
 
         # Il metodo outer restituisce una matrice con shape (self.x_j2, dk), e deve coincidere con
         #   la matrice che sta aggiornando, in questo caso saltando la riga dei bias precedentemente
         #   aggiornata.
-        self.w_kj2[1:, :] += self.learning_rate * np.outer(self.x_j2, dk)
+        #self.w_kj2[1:, :] += self.learning_rate * np.outer(self.x_j2, dk)
 
+        self.w_kj2 += self.learning_rate * delta_wk
 
         # --- Aggiornamento Pesi Output (w_kj2) - Versione non vettorializzata ---
 
@@ -132,10 +135,8 @@ class NN:
 
         # --- Aggiornamento Pesi Hidden 2 (w_j2j1) - Versione vettorializzata ---
 
-        self.w_j2j1[0] += self.learning_rate * dj2
-
-        self.w_j2j1[1:, :] += self.learning_rate * np.outer(self.x_j1, dj2)
-
+        self.w_j2j1 += self.learning_rate * delta_wj2j1 
+ 
 
         # --- Aggiornamento Pesi Hidden 2 (w_j2j1) - Versione non vettorializzata ---
         
@@ -149,9 +150,7 @@ class NN:
 
         # --- Aggiornamento Pesi Hidden 1 (w_j1i) Versione vettorializzata ---
 
-        self.w_j1i[0] += self.learning_rate * dj1
-
-        self.w_j1i[1:, :] += self.learning_rate * np.outer(x_pattern, dj1)
+        self.w_j1i += self.learning_rate * delta_wj1i
 
         # --- Aggiornamento Pesi Hidden 1 (w_j1i) Versione non vettorializzata ---
 

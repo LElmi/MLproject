@@ -7,7 +7,7 @@ Questo progetto implementa una **rete neurale feed-forward** sviluppata interame
 - funzioni di attivazione e loro derivate
 - aggiornamento dei pesi tramite gradient descent
 
-Il progetto è pensato a scopo **didattico e sperimentale**.
+Il progetto è pensato a scopo **didattico e sperimentale**. Il progetto **non utilizza framework di deep learning** (come PyTorch o TensorFlow). Tutte le operazioni (forward, backward, update dei pesi) sono implementate manualmente.
 
 ---
 
@@ -124,22 +124,6 @@ python3 -m scripts.run_training
 
 L’esecuzione come modulo garantisce la corretta risoluzione degli import interni.
 
----
-
-## Note finali
-
-- Il progetto **non utilizza framework di deep learning** (come PyTorch o TensorFlow).
-- Tutte le operazioni (forward, backward, update dei pesi) sono implementate manualmente.
-- Il codice è strutturato per essere facilmente estendibile e modificabile a fini sperimentali.
-
----
-
-## Possibili estensioni future
-
-- Supporto a un numero arbitrario di hidden layer
-- Logging delle metriche di training
-
----
 
 Questo progetto è stato sviluppato come supporto allo studio dei concetti trattati nel corso
 *Machine Learning* dell’Università di Pisa, tenuto dal Prof. Alessio Micheli.
