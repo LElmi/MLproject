@@ -1,6 +1,6 @@
 import numpy as np
 import math as math
-from typing import Callable
+from typing import Callable, List
 
 
 Array2D = np.ndarray
@@ -88,6 +88,7 @@ def compute_delta_weights(delta: Array1D, x_prev: Array1D) -> Array2D:
     x_prev_biased = np.append(1, x_prev)
     # Outer product tra x_prev e delta
     delta_w = np.outer(x_prev_biased, delta)
+
     return delta_w
 
 
@@ -109,6 +110,45 @@ def compute_delta_all_layers(d: Array1D, x_k: Array1D, w_kj2: Array2D,
     delta_wj1i = compute_delta_weights(dj1, x_i)
     
     return delta_wk, delta_wj2j1, delta_wj1i, gradient_norm(dk, dj2, dj1)
+
+
+def compute_delta_all_layers_with_momentum(
+    d, x_k, w_kj2, x_j2, w_j2j1, x_j1, w_j1i, x_i, fd,
+    old_deltas, alpha_momentum
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, float]:
+
+    # 1. OUTPUT LAYER
+    dk = delta_k(d, x_k)
+    delta_wk = compute_delta_weights(dk, x_j2)
+    
+    # 2. HIDDEN LAYER 2
+    dj2 = delta_j(w_j2j1, x_j1, w_kj2, dk, fd)
+    delta_wj2j1 = compute_delta_weights(dj2, x_j1)
+    
+    # 3. HIDDEN LAYER 1
+    dj1 = delta_j(w_j1i, x_i, w_j2j1, dj2, fd)
+    delta_wj1i = compute_delta_weights(dj1, x_i)
+    
+    # Calcola la norma del gradiente
+    current_grad_norm = gradient_norm(dk, dj2, dj1)
+
+    if old_deltas is None: 
+        # Il momentum non esiste ancora, ritorniamo solo il gradiente attuale
+        return delta_wk, delta_wj2j1, delta_wj1i, current_grad_norm
+    
+    else: 
+        # Applica il momentum: gradiente_attuale + alpha * vecchio_update
+        old_dwk, old_dwj2j1, old_dwj1i = old_deltas
+        
+        new_dwk = delta_wk + (alpha_momentum * old_dwk)
+        new_dwj2j1 = delta_wj2j1 + (alpha_momentum * old_dwj2j1)
+        new_dwj1i = delta_wj1i + (alpha_momentum * old_dwj1i)
+        
+        return new_dwk, new_dwj2j1, new_dwj1i, current_grad_norm
+
+
+
+
 
 def gradient_norm(dk, dj2, dj1):
 

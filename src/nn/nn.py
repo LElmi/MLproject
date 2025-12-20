@@ -88,10 +88,7 @@ class NN:
 
     # Adesso prende come argomento matrici a cui poi applica quello che deve applicare
 
-    def update_weights(self,
-                    delta_wk: Array2D,
-                    delta_wj2j1: Array1D,
-                    delta_wj1i: Array1D):
+    def update_weights(self, delta_wk: Array2D, delta_wj2j1: Array2D, delta_wj1i: Array2D):
         
         # ONLINE
         # --- Aggiornamento Pesi Output (w_kj2) - Versione vettorializzata ---
@@ -150,6 +147,7 @@ class NN:
 
         """
 
+
     def forward(self, x_pattern: Array1D) -> tuple[Array1D, Array1D, Array1D]:
         """
         Forward pass su tutta la rete per un **singolo pattern!**
@@ -174,3 +172,4 @@ class NN:
         )
 
         return self.x_k, self.x_j2, self.x_j1
+

@@ -24,7 +24,19 @@ trainer = Trainer(x_i.shape[1],
                   config.BATCH,
                   config.EPOCHS,
                   config.EPSILON,
-                  config.PATIENCE)
+                  config.PATIENCE,
+                  config.MOMENTUM,
+                  config.ALPHA_MOM)
+
+# normalizza le matrici x_i e d in l2
+min_val_x = x_i.min(axis=0)
+max_val_x = x_i.max(axis=0)
+x_i = (x_i - min_val_x) / (max_val_x - min_val_x)
+
+min_val_d = d.min(axis=0)
+max_val_d = d.max(axis=0)
+d = (d - min_val_d) / (max_val_d - min_val_d)
+
 
 # Avvia training
 trainer.train(x_i, d)

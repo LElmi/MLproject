@@ -6,6 +6,7 @@ from src.nn.nn import NN
 from src.training.forward.forward_pass import *
 from src.training.backward.backprop import *
 from src.utils import visualization as vs
+from typing import Callable, Dict, Tuple, List
 
 
 # Tipi utili per chiarezza
@@ -32,7 +33,9 @@ class Trainer:
                  batch: bool,
                  epochs: int,
                  epsilon: float,
-                 patience: int):
+                 patience: int,
+                 momentum: bool,
+                 alpha_mom: float):
         
 
         self.f_act = f_act
@@ -40,6 +43,8 @@ class Trainer:
         self.epochs = epochs
         self.epsilon = epsilon
         self.patience = patience
+        self.momentum = momentum
+        self.alpha_mom = alpha_mom
         #self.stopping_criteria = stopping_criteria
 
         # Inizializza la rete neurale
@@ -55,110 +60,30 @@ class Trainer:
         self.mse_error_history = []
         # self.total_error_array = []
 
+        self.old_deltas = None # <-- Necessario per il momentum
+
 
     def train(self, input_matrix, d_matrix):
 
-        patterns = input_matrix.shape[0]
+        n_patterns = input_matrix.shape[0]
         gradient_misbehave = 0
-        patience = 3
-        epoch = 0
-        # Inizializza il vettore dove ogni elemento è la sommatoria degli errori dei pattern per epoca
-        self.mee_error_history = []
-        self.mse_error_history = []
-        # self.total_error_array = np.zeros(self.epochs)  ## 
-
-
-
-        #total_error_array = np.zeros(self.epochs)
-
         prev_gradient_norm_epoch = None
+        epoch = 0
+        
         start_time = time.perf_counter()
         print(f"Inizio training...")
-
-
-        # -------------- CICLO EPOCHS ------------------
-        
+            
         # Aggiunge lo STOPPING CRITERIA basato sulla norma del gradiente, che se non scende di molto
         # oltre un certo numero di epoche (= patience) allora ritorna il risultato
-        while gradient_misbehave < patience and epoch < self.epochs:
-        #for epoch in range(self.epochs):
+        while gradient_misbehave < self.patience and epoch < self.epochs:
+
             epoch += 1
-            mee_pattern_error = 0.0
-            mse_pattern_error = 0.0
-            gradient_norm_epoch = 0.0
-            # total_error = np.zeros(self.neuraln.w_kj2.shape[1]) 
-            # MSE_k = np.zeros(self.neuraln.w_kj2.shape[1])
-
-            # SHUFFLE (se Online)
-            indices = np.arange(patterns)
-            if not self.batch:
-                np.random.shuffle(indices)
-
-            # BATCH
-            if self.batch == True:
-                delta_wk_epoch = np.zeros_like(self.neuraln.w_kj2)
-                delta_wj2j1_epoch = np.zeros_like(self.neuraln.w_j2j1)
-                delta_wj1i_epoch = np.zeros_like(self.neuraln.w_j1i)
             
-            # -------------- INIZIO CICLO PATTERN ------------------
-            # Sia online o batch, calcola i delta sul pattern
-            for idx_pattern in indices:
-                
-                x_i = input_matrix[idx_pattern]
-                d = d_matrix[idx_pattern]
+            # Computa un epoca
+            epoch_results = self._run_epoch(input_matrix, d_matrix, n_patterns)
 
-                self.neuraln.forward(input_matrix[idx_pattern])
-                    
-                mee_pattern_error += (np.sum((d - self.neuraln.x_k) ** 2)) ** 0.5
-                mse_pattern_error += (np.sum((d - self.neuraln.x_k) ** 2))
-
-                deltas = compute_delta_all_layers(
-                                                d,
-                                                self.neuraln.x_k,
-                                                self.neuraln.w_kj2, 
-                                                self.neuraln.x_j2,
-                                                self.neuraln.w_j2j1,
-                                                self.neuraln.x_j1,
-                                                self.neuraln.w_j1i,
-                                                x_i,
-                                                self.f_act
-                                                )
-    
-                    #print(delta_wk)
-                    # MSE_k += (d - self.neuraln.x_k) ** 2
-
-                dwk, dwj2, dwj1, grad_norm = deltas
-                gradient_norm_epoch += grad_norm
-                
-                # ONLINE: Aggiorna i pesi ad ogni pattern
-                if self.batch == False:
-                    self.neuraln.update_weights(dwk, dwj2, dwj1)
-
-                # BATCH: Accumula i delta su tutti i pattern, li aggiorna ad ogni epoca
-                if self.batch == True:
-                    delta_wk_epoch += dwk
-                    delta_wj2j1_epoch += dwj2
-                    delta_wj1i_epoch += dwj1
-
-            # -------------- FINE CICLO PATTERN ------------------
-
-            if self.batch == True:
-
-                # (?)
-                delta_wk_epoch    /= patterns
-                delta_wj2j1_epoch /= patterns
-                delta_wj1i_epoch  /= patterns  
-                
-                self.neuraln.update_weights(delta_wk_epoch, 
-                                            delta_wj2j1_epoch, 
-                                            delta_wj1i_epoch)
-                
-
-            mean_epoch_mee_error = mee_pattern_error / patterns
-            mean_epoch_mse_error = mse_pattern_error / patterns
-
-            self.mee_error_history.append(mean_epoch_mee_error)
-            self.mse_error_history.append(mean_epoch_mse_error)
+            self.mee_error_history.append(epoch_results["mee"])
+            self.mse_error_history.append(epoch_results["mse"])
 
             # dà un'idea dell'errore medio per ogni neurono di output,
             #MSE_k = np.sqrt(MSE_k) / patterns
@@ -168,33 +93,107 @@ class Trainer:
             #total_error = MSE_tot / self.neuraln.w_kj2.shape[1]
             #self.total_error_array[epoch] = total_error
             
-            current_grad_norm = gradient_norm_epoch / patterns
+            # Necessario perché confronti i risultati prima con il nuovo
 
-            if prev_gradient_norm_epoch is not None:
+            prev_gradient_norm_epoch, gradient_misbehave = self._check_patience(gradient_misbehave,
+                                                                                prev_gradient_norm_epoch, 
+                                                                                epoch_results["grad_norm"],
+                                                                                n_patterns)
 
-                diff = abs(current_grad_norm - prev_gradient_norm_epoch) / (prev_gradient_norm_epoch + 1e-10)
-                if diff < self.epsilon:
-                    gradient_misbehave += 1
-                else:
-                    gradient_misbehave = 0
-
-            prev_gradient_norm_epoch = current_grad_norm
-
-            print("|| epooch n° ", epoch, ", total mee error: ", mean_epoch_mee_error, " ||")
+            print("|| epooch n° ", epoch, ", total mee error: ", epoch_results["mee"], " ||")
 
 
-        tempo_di_training = time.perf_counter() - start_time
-
-
-        print(" Total mee error: ", mean_epoch_mee_error) 
-        print(" Total mse error: ", mean_epoch_mse_error) 
-        print(" Tempo di training: ", tempo_di_training)
+        print(" Total mee error: ", epoch_results["mee"]) 
+        print(" Total mse error: ", epoch_results["mse"]) 
+        print(" Tempo di training: ", time.perf_counter() - start_time)
 
 
 
         print("\n--- Training Completato ---\n")
                 
         # Per PLOT
-        vs.plot_errors(self, tempo_di_training)
-        # self.plot_errors_separate(epoche) # Se preferisci grafici separati
+        vs.plot_errors(self, time.perf_counter() - start_time)
 
+
+
+    def _run_epoch(self, input_matrix: np.ndarray, d_matrix: np.ndarray, n_patterns: int) -> Dict[str, float]:
+        """
+        Metodo che nasce con l'esigenza di portare un po' di logica fuori dal train,
+        runna una epoca, restitutuendo le informazioni sull'errore
+        """
+
+        indices = np.arange(n_patterns)
+        if not self.batch: np.random.shuffle(indices)
+
+        epoch_mee, epoch_mse, epoch_grad = 0.0, 0.0, 0.0
+
+        # Creo una lista di batch quindi batch_deltas = [ [dwk], [dwj2], [dwj1]]
+        batch_deltas = [np.zeros_like(w) for w in [self.neuraln.w_kj2, self.neuraln.w_j2j1, self.neuraln.w_j1i]]
+
+        for idx in indices:
+            x, d = input_matrix[idx], d_matrix[idx]
+
+            self.neuraln.forward(x)
+
+            epoch_mee += (np.sum((d - self.neuraln.x_k) ** 2)) ** 0.5
+            epoch_mse += (np.sum((d - self.neuraln.x_k) ** 2))
+
+            # L'asterisco serve per raggruppare in lista tutti i risultati
+            # tranne, in questo caso, l'ultimo. Essendo specificato.
+            # quindi deltas = [dwk, dwj2, dwj1]
+
+            if self.batch and self.momentum:
+                *deltas, grad_norm = compute_delta_all_layers_with_momentum(
+                    d, self.neuraln.x_k, self.neuraln.w_kj2, self.neuraln.x_j2,
+                    self.neuraln.w_j2j1, self.neuraln.x_j1, self.neuraln.w_j1i, x, self.f_act,
+                    self.old_deltas, self.alpha_mom)
+                
+                self.old_deltas = deltas
+
+            else:
+                *deltas, grad_norm = compute_delta_all_layers(
+                    d, self.neuraln.x_k, self.neuraln.w_kj2, self.neuraln.x_j2,
+                    self.neuraln.w_j2j1, self.neuraln.x_j1, self.neuraln.w_j1i, x, self.f_act
+                )
+
+            
+            epoch_grad += grad_norm
+
+
+            if self.batch:
+                # Accumula i delta
+                for i in range(len(batch_deltas)): batch_deltas[i] += deltas[i]
+            else:
+                self.neuraln.update_weights(*deltas)
+        
+        dwk_epoch, dwj2j1_epoch, dwj1i_epoch = batch_deltas
+        
+        if self.batch:
+
+            # (?)
+            dwk_epoch    /= n_patterns
+            dwj2j1_epoch /= n_patterns
+            dwj1i_epoch  /= n_patterns  
+            
+            self.neuraln.update_weights(dwk_epoch, dwj2j1_epoch, dwj1i_epoch)
+
+        return {
+            'mee': epoch_mee / n_patterns,
+            'mse': epoch_mse / n_patterns,
+            'grad_norm': epoch_grad / n_patterns
+        }
+    
+
+    def _check_patience(self, gradient_misbehave: int, prev_gradient_norm_epoch: float, grad_norm: float, n_patterns: int) -> float: 
+        
+        current_grad_norm = grad_norm / n_patterns
+
+        # Controlla se il gradiente sale ancora
+        if prev_gradient_norm_epoch is not None:
+            diff = abs(current_grad_norm - prev_gradient_norm_epoch) / (prev_gradient_norm_epoch + 1e-10)
+            if diff < self.epsilon:
+                gradient_misbehave += 1
+            else:
+                gradient_misbehave = 0
+        
+        return current_grad_norm, gradient_misbehave
