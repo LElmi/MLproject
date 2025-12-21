@@ -2,6 +2,8 @@
 
 import numpy as np
 import time
+
+import config
 from src.nn.nn import NN
 from src.training.forward.forward_pass import *
 from src.training.backward.backprop import *
@@ -32,10 +34,12 @@ class Trainer:
                  learning_rate: float,
                  batch: bool,
                  epochs: int,
+                 early_stopping: bool,
                  epsilon: float,
                  patience: int,
                  momentum: bool,
-                 alpha_mom: float):
+                 alpha_mom: float,
+                 split: float):
         
 
         self.f_act = f_act
@@ -45,8 +49,9 @@ class Trainer:
         self.patience = patience
         self.momentum = momentum
         self.alpha_mom = alpha_mom
+        self.split = split
         #self.stopping_criteria = stopping_criteria
-
+        self.early_stopping = early_stopping
         # Inizializza la rete neurale
         self.neuraln = NN(
                         input_size, 
@@ -62,8 +67,32 @@ class Trainer:
 
         self.old_deltas = None # <-- Necessario per il momentum
 
+    def train_standard(self, input_matrix, d_matrix):
 
-    def train(self, input_matrix, d_matrix):
+        n_patterns = input_matrix.shape[0]
+        prev_gradient_norm_epoch = None
+        epoch = 0
+
+        start_time = time.perf_counter()
+        print(f"Inizio training...")
+        for i in range (self.epochs):
+            epoch_results = self._run_epoch(input_matrix, d_matrix, n_patterns)
+
+            self.mee_error_history.append(epoch_results["mee"])
+            self.mse_error_history.append(epoch_results["mse"])
+
+
+            print("|| epooch n° ", i, ", total mee error: ", epoch_results["mee"], " ||")
+
+        print(" Total mee error: ", epoch_results["mee"])
+        print(" Total mse error: ", epoch_results["mse"])
+        print(" Tempo di training: ", time.perf_counter() - start_time)
+        print("\n--- Training Completato ---\n")
+
+        # Per PLOT
+        vs.plot_errors(self, time.perf_counter() - start_time)
+
+    def train_with_early_stopping(self, input_matrix, d_matrix):
 
         n_patterns = input_matrix.shape[0]
         gradient_misbehave = 0
@@ -197,3 +226,15 @@ class Trainer:
                 gradient_misbehave = 0
         
         return current_grad_norm, gradient_misbehave
+
+    def grid_search_train(self, input_matrix, d_matrix, epochs):
+
+        n_patterns = input_matrix.shape[0]
+        for i in range (epochs):
+            epoch_results = self._run_epoch(input_matrix, d_matrix, n_patterns)
+
+        self.mee_error_history.append(epoch_results["mee"])
+        self.mse_error_history.append(epoch_results["mse"])
+
+        return epoch_results["mee"]
+
