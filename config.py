@@ -8,8 +8,8 @@ PATH_DT = "../data/training_data/ML-CUP25-TR.csv"
 
 
 # ======== UNITS SIZE ========
-N_HIDDENL1 = 32
-N_HIDDENL2 = 16
+N_HIDDENL1 = 64
+N_HIDDENL2 = 32
 N_OUTPUTS = 4
 
 
@@ -35,7 +35,7 @@ EARLY_STOPPING = True
 # serve per lo stopping criteria come limite inferiore, in percentuale
 # ======== EPSILON ==========
 #EPSILON = 0.001
-EPSILON = 0.001
+EPSILON = 0.0005
 
 # Dopo quante epoche in cui non cresce il gradiente mi fermo
 # ======= PATIENCE ==========
