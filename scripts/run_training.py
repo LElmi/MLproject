@@ -69,7 +69,7 @@ row = [Trainer(x_i_remaining.shape[1],
                               config.MOMENTUM,
                               config.ALPHA_MOM,
                               config.SPLIT) for i in range(num_cols)]
-scout = [list(row) for i in range(num_rows)]
+scout = [list(row) for j in range(num_rows)]
 #--------------------------------------
 # ciclo su lo spazio dei parametri per la grid search
 #--------------------------------------
@@ -78,12 +78,13 @@ print("inizio scouting per ",scouting_epochs," epochs per ogni configurazione, i
 print("I range di parametri che verranno testati sono:")
 print("learning rate range = ",min(learning_rate_array),"-",max(learning_rate_array))
 print("Alpha momentum range = ",min(alpha_array),"-",max(alpha_array))
-print("-------------------------------------------------------------------------------------------------------------")
+
 count=0
 for i in range(learning_rate_array.shape[0]):
     for j in range(alpha_array.shape[0]):
         #for k in range(perc.shape[0]):
             count+=1
+            print("----------------------------------------------------------------------------------------------------------------------------")
             scout[i][j] = Trainer(x_i_remaining.shape[1],
                               config.N_HIDDENL1,
                               config.N_HIDDENL2,
@@ -91,25 +92,29 @@ for i in range(learning_rate_array.shape[0]):
                               config.FUN_ACT,
                               learning_rate_array[i],
                               config.BATCH,
-                              scouting_epochs,
+                              #scouting_epochs,
+                              config.EPOCHS,
                               config.EARLY_STOPPING,
-                              config.EPSILON,
+                              config.EPSILON*100., #Early stopping aggressivo per la fase di grid search
                               config.PATIENCE,
                               config.MOMENTUM,
                               alpha_array[j],
                               config.SPLIT)
-            mee=scout[i][j].grid_search_train(x_i_remaining,d, scouting_epochs)
-            print("Configurazione n°:",count,"/",learning_rate_array.shape[0]*alpha_array.shape[0]," scouting con parametri: learning rate=", learning_rate_array[i], ", alpha=", alpha_array[j])
+            print("Configurazione n°:", count, "/", learning_rate_array.shape[0] * alpha_array.shape[0],
+                    " scouting con parametri: learning rate=", learning_rate_array[i], ", alpha=", alpha_array[j])
+
+            mee=scout[i][j].grid_search_train_with_early_stopping(x_i_remaining,d, scouting_epochs)
+
             if (mee<best_mee):
                 best_mee=mee
                 best_index_alpha=j
                 best_index_learning_rate=i
                 print("Miglior MEE aggiornata a:", best_mee)
-print("-------------------------------------------------------------------------------------------------------------")
+print("----------------------------------------------------------------------------------------------------------------------------")
 print("SCOUTING TERMINATO")
 print("Miglior MEE trovata: MEE=",best_mee)
 print("Parametri corrispondenti: learning rate = ",learning_rate_array[best_index_learning_rate],"alpha = ",alpha_array[best_index_alpha])#," epsilon = ",epsilon_array[best_index_epsilon],])
-print("-------------------------------------------------------------------------------------------------------------")
+print("----------------------------------------------------------------------------------------------------------------------------")
 # Avvia training
 trainer = Trainer(x_i_remaining.shape[1],
                       config.N_HIDDENL1,
@@ -129,3 +134,4 @@ if (config.EARLY_STOPPING == True):
     trainer.train_with_early_stopping(x_i_remaining, d)
 else:
     trainer.train_standard(x_i_remaining, d)
+
