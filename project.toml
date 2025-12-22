@@ -1,0 +1,8 @@
+[project]
+name = "mlcup25-project"
+version = "alpha"
+description = "Rete neurale per il dataset ML-CUP25"
+authors = [
+    { name = "Andres Lazzari", email = "a.lazzari8@studenti.unipi.it" },
+    { name = "Leonardo Elmi", email = " "}
+]

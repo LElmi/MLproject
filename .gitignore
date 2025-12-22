@@ -1,0 +1,41 @@
+# --- ENVIRONMENT ---
+.venv/
+venv/
+env/
+ENV/
+
+# --- EDITOR ---
+.vscode/
+.idea/
+
+# --- PYTHON CACHE ---
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# --- BYTECODE ---
+*.py[cod]
+*$py.class
+
+# --- DISTRIBUTION / PACKAGING ---
+build/
+dist/
+*.egg-info/
+*.egg
+
+# --- VENV BACKUPS ---
+pip-wheel-metadata/
+wheels/
+
+# --- MISC ---
+.DS_Store
+*.log
+*.tmp
+
+# --- TEST / COVERAGE ---
+.pytest_cache/
+.coverage
+htmlcov/
+
