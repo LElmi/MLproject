@@ -8,6 +8,7 @@ from src.nn.nn import NN
 from src.training.forward.forward_pass import *
 from src.training.backward.backprop import *
 from src.utils import visualization as vs
+from src.utils import save_model as sm
 from typing import Callable, Dict, Tuple, List
 
 
@@ -139,6 +140,7 @@ class Trainer:
 
 
         print("\n--- Training Completato ---\n")
+        sm.save_model(self.neuraln.w_kj2,self.neuraln.w_j2j1,self.neuraln.w_j1i)
                 
         # Per PLOT
         vs.plot_errors(self, time.perf_counter() - start_time)

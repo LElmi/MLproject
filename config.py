@@ -35,7 +35,7 @@ EARLY_STOPPING = True
 # serve per lo stopping criteria come limite inferiore, in percentuale
 # ======== EPSILON ==========
 #EPSILON = 0.001
-EPSILON = 0.0001
+EPSILON = 0.0005
 
 # Dopo quante epoche in cui non cresce il gradiente mi fermo
 # ======= PATIENCE ==========
