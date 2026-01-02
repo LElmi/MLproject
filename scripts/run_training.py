@@ -18,9 +18,8 @@ x_i = x_i.to_numpy().astype(np.float64)
 d = d.to_numpy().astype(np.float64)
 
 if config.MONK:
-    min_val_x = x_i.min(axis=0)
-    max_val_x = x_i.max(axis=0)
-    x_i = (x_i - min_val_x) / (max_val_x - min_val_x)
+
+    pass
 
 else:
     min_val_x = x_i.min(axis=0)

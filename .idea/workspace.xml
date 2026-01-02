@@ -4,27 +4,16 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="64c73e0f-2842-4ff3-84d4-d4d0e48b01de" name="Changes" comment="inserito le funzioni load_model.py e save_model.py">
-      <change afterPath="$PROJECT_DIR$/data/training_data/monks-1.train" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/data/training_data/monks-2.train" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/data/training_data/monks-3.train" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/scripts/Ensemble_learning.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/scripts/run_validation.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/activationf/Leaky_relu.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/utils/MEE_calculation.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/utils/log_entropy.py" afterDir="false" />
+    <list default="true" id="64c73e0f-2842-4ff3-84d4-d4d0e48b01de" name="Changes" comment="Applicazione al MONK">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/config.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/Training mee.png" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/Training mee.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/scripts/run_training.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/run_training.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/activationf/sigmoid.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/activationf/sigmoid.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/run_validation.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/run_validation.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/validation mee.png" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/validation mee.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/nn/nn.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/nn/nn.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/training/backward/backprop.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/training/backward/backprop.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/training/forward/forward_pass.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/training/forward/forward_pass.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/training/trainer.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/training/trainer.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/utils/load_data.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/load_data.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils/load_model.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/load_model.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils/save_model.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/save_model.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils/visualization.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/visualization.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -74,6 +63,7 @@
     "Python.backprop.executor": "Run",
     "Python.config.executor": "Run",
     "Python.fixednn.executor": "Run",
+    "Python.load_data.executor": "Run",
     "Python.load_model.executor": "Run",
     "Python.run_training.executor": "Run",
     "Python.run_validation.executor": "Run",
@@ -317,7 +307,23 @@
       <option name="project" value="LOCAL" />
       <updated>1766415315425</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="Applicazione al MONK">
+      <option name="closed" value="true" />
+      <created>1767362707867</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1767362707867</updated>
+    </task>
+    <task id="LOCAL-00010" summary="Applicazione al MONK">
+      <option name="closed" value="true" />
+      <created>1767362742737</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1767362742737</updated>
+    </task>
+    <option name="localTasksCounter" value="11" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -338,7 +344,8 @@
     <MESSAGE value="Preparato l'hold out per la validation che è ancora da implementare, principalmente è stata implementata la grid search, è stato inserito un toggle on/off per l'early stopping e nella classe trainer sono stati inseriti metodi differenziati per il training, training_with_early_stopping, train_standard, grid_search_train" />
     <MESSAGE value="oops commit sul master, mi sono sbagliato, ho implementato il metodo grid_search_with_early_stopping nella classe Trainer, sarà una cavolata?" />
     <MESSAGE value="inserito le funzioni load_model.py e save_model.py" />
-    <option name="LAST_COMMIT_MESSAGE" value="inserito le funzioni load_model.py e save_model.py" />
+    <MESSAGE value="Applicazione al MONK" />
+    <option name="LAST_COMMIT_MESSAGE" value="Applicazione al MONK" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

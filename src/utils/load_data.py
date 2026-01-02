@@ -14,20 +14,20 @@ def load_data(path) -> tuple[pd.DataFrame, pd.DataFrame] :
 
 
 def load_monks_data(path) -> tuple[pd.DataFrame, pd.Series]:
-    data = pd.read_csv(path, delimiter=' ', header=None, usecols=range(7))
+    data = pd.read_csv(path, sep=r'\s+', header=None)
 
-    X_raw = data.iloc[:, :-1]
-    y = data.iloc[:, -1]  # 0/1 target
-
-    X_raw.columns = [f'feature_{i}' for i in range(1, 7)]
+    y = data.iloc[:, 0].astype(float)
     y.name = 'target'
 
+
+    X_raw = data.iloc[:, 1:7]
+    X_raw.columns = [f'feature_{i}' for i in range(1, 7)]
+
+    # one-hot encoding
     X = pd.get_dummies(X_raw, columns=X_raw.columns)
 
-    X = X.astype(float)
-    y = y.astype(float)
+    return X.astype(float), y
 
-    return X, y
 
 
 

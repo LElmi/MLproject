@@ -42,4 +42,6 @@ def validation_monk(validation_set, validation_d, w_j1i, w_j2j1, w_kj2):
         else:
             misclassified += 1
     print("classificati correttamente:",correctly_classified," errori:",misclassified, "accuratezza:",correctly_classified/(correctly_classified + misclassified)* 100,"%")
+    print("validation targets:",validation_d)
+    print("prediction values:",prediction)
     return correctly_classified,misclassified
