@@ -4,10 +4,10 @@ import numpy as np
 import time
 from typing import Callable, Dict, Tuple, List
 
-import config
+import config.cup_config as config
 from src.nn.nn import NN
-from src.training.train.forward.forward_pass import *
-from src.training.train.backward.backprop import compute_delta_all_layers_list
+from src.training.trainer.forward.forward_pass import *
+from src.training.trainer.backward.backprop import compute_delta_all_layers_list
 from src.utils import visualization as vs
 from src.utils import save_model as sm
 

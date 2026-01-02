@@ -1,5 +1,5 @@
 import numpy as np
-from src.training.train.forward.forward_pass import  forward_all_layers
+from src.training.trainer.forward.forward_pass import  forward_all_layers
 from src.activationf.relu import relu
 
 from typing import Callable
