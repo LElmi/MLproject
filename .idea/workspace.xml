@@ -7,13 +7,9 @@
     <list default="true" id="64c73e0f-2842-4ff3-84d4-d4d0e48b01de" name="Changes" comment="Applicazione al MONK">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/config.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/Ensemble_learning.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/Ensemble_learning.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/scripts/Training mee.png" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/Training mee.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/run_training.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/run_training.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/run_validation.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/run_validation.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/scripts/validation mee.png" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/validation mee.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/nn/nn.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/nn/nn.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/training/backward/backprop.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/training/backward/backprop.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/utils/load_data.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/load_data.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -55,29 +51,29 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "Python.Ensemble_learning.executor": "Run",
-    "Python.backprop.executor": "Run",
-    "Python.config.executor": "Run",
-    "Python.fixednn.executor": "Run",
-    "Python.load_data.executor": "Run",
-    "Python.load_model.executor": "Run",
-    "Python.run_training.executor": "Run",
-    "Python.run_validation.executor": "Run",
-    "Python.trainer.executor": "Run",
-    "Python.visualization.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "git-widget-placeholder": "ProgettoVersioneLeo",
-    "last_opened_file_path": "/home/leonardo/PycharmProjects/MLproject/data/training_data",
-    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ASKED_SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;Python.Ensemble_learning.executor&quot;: &quot;Run&quot;,
+    &quot;Python.backprop.executor&quot;: &quot;Run&quot;,
+    &quot;Python.config.executor&quot;: &quot;Run&quot;,
+    &quot;Python.fixednn.executor&quot;: &quot;Run&quot;,
+    &quot;Python.load_data.executor&quot;: &quot;Run&quot;,
+    &quot;Python.load_model.executor&quot;: &quot;Run&quot;,
+    &quot;Python.run_training.executor&quot;: &quot;Run&quot;,
+    &quot;Python.run_validation.executor&quot;: &quot;Run&quot;,
+    &quot;Python.trainer.executor&quot;: &quot;Run&quot;,
+    &quot;Python.visualization.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;ProgettoVersioneLeo&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/leonardo/PycharmProjects/MLproject/data/training_data&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;
   }
-}]]></component>
+}</component>
   <component name="PyConsoleOptionsProvider">
     <option name="myPythonConsoleState">
       <console-settings sdk-home="$PROJECT_DIR$/../PythonProject/.venv/bin/python">

@@ -9,8 +9,8 @@ PATH_DT = "../data/training_data/monks-1.train"
 MONK= True #<- toggle per il monk
 
 # ======== UNITS SIZE ========
-N_HIDDENL1 = 16
-N_HIDDENL2 = 8
+N_HIDDENL1 = 32
+N_HIDDENL2 = 16
 
 if MONK==True:
     N_OUTPUTS = 1
@@ -23,7 +23,7 @@ FUN_ACT = leaky_relu
 
 
 # ====== LEARNING RATE ======= #<- viene usato come valore centrale per la grid search
-LEARNING_RATE =  1e-2   #<- Funziona in batch ma da applicare il criterio di stop sennò scavalca il minimo
+LEARNING_RATE = 2e-3   #<- Funziona in batch ma da applicare il criterio di stop sennò scavalca il minimo
 #LEARNING_RATE = 0.000025
 
 # ========= BATCH ============
@@ -33,14 +33,14 @@ BATCH = True
 # --------------------- STOP CRITERIA:
 
 # ======== N EPOCHS ==========
-EPOCHS = 1000 #usato anche per determinare il numero di epoche per ogni run di grid search, 3% epochs ogni run
+EPOCHS = 5000 #usato anche per determinare il numero di epoche per ogni run di grid search, 3% epochs ogni run
 # ======== Early Stopping oon/off =============
 EARLY_STOPPING = True
 # gradient_norm < EPSILON, quindi il gradiente non cresce abbastanza,
 # serve per lo stopping criteria come limite inferiore, in percentuale
 # ======== EPSILON ==========
 #EPSILON = 0.001
-EPSILON = 0.0000001
+EPSILON = 0.00000001
 
 # Dopo quante epoche in cui non cresce il gradiente mi fermo
 # ======= PATIENCE ==========

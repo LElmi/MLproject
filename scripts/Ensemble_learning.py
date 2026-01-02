@@ -4,7 +4,7 @@ from src.utils.load_data import load_data, load_monks_data
 from scripts.run_validation import *
 import copy
 best_model = None
-best_accuracy = float("inf")
+best_accuracy = 0.0
 if config.MONK:
     x_i, d = load_monks_data(config.PATH_DT)
 else:
@@ -64,7 +64,7 @@ for seed in range(10):
     w_j1i, w_j2j1, w_kj2, architecture = load_model(weights_filename, architecture_filename)
     correctly_classified, misclassified=validation_monk(validation_set, validation_d, w_j1i, w_j2j1, w_kj2)
     accuracy=correctly_classified/(correctly_classified + misclassified)
-    if accuracy < best_accuracy:
+    if accuracy >best_accuracy:
         best_accuracy = accuracy
         best_model = copy.deepcopy(trainer)
-    print("miglior accuratezza raggiunta:",best_accuracy*100,"%")
+print("miglior accuratezza raggiunta:",best_accuracy*100,"%")
