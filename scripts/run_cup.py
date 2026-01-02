@@ -42,21 +42,3 @@ trainer = Trainer(
 
 # Avvia training
 trainer.fit(x_i, d)
-
-"""# 1. Ottieni le predizioni finali della rete per tutto il dataset
-predictions_norm = []
-for x in x_i:
-    res = trainer.neuraln.forward_network(x)
-    predictions_norm.append(res[-1])
-predictions_norm = np.array(predictions_norm)
-
-# 2. Applica la formula inversas
-# Formula: ValoreReale = ValoreNorm * (Max - Min) + Min
-predictions_real = predictions_norm * (d_max - d_min) + d_min
-targets_real = d * (d_max - d_min) + d_min
-
-# 3. Calcola il MEE reale finale
-errors = targets_real - predictions_real
-mee_reale = np.mean(np.sqrt(np.sum(errors**2, axis=1)))
-
-print(f"MEE Finale sui dati REALI: {mee_reale:.4f}")"""
