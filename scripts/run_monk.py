@@ -1,15 +1,15 @@
 import numpy as np
 import itertools
-import config
+import config.cup_config as cup_config
 from src.training.train.trainer import Trainer
 from src.utils import *
 
 # Carica dati
-x_i, d = load_data(config.PATH_DT)
+x_i, d = load_data(cup_config.PATH_DT)
 x_i = x_i.to_numpy()
 d = d.to_numpy()
 
-x_i_remaining, validation_i = traindata_split_in_ts_vs(x_i, config.SPLIT)
+x_i_remaining, validation_i = traindata_split_in_ts_vs(x_i, cup_config.SPLIT)
 x_i_remaining, x_min, x_max = normalize_data(x_i_remaining)
 
 x_i_remaining, x_min, x_max = normalize_data(x_i)
@@ -27,7 +27,7 @@ alpha_array = np.linspace(0.25, 0.75, 10)
 # Fa il prodotto cartesiano dei valori, lo scorre nel ciclo for
 hyperparams_combinations = list(itertools.product(learning_rate_array, alpha_array))
 
-scouting_epochs = int(round(config.EPOCHS*0.05)) #5% delle epoche viene usato per ogni run della grid search
+scouting_epochs = int(round(cup_config.EPOCHS*0.05)) #5% delle epoche viene usato per ogni run della grid search
 best_mee = float('inf')
 best_config = None
 
@@ -48,18 +48,18 @@ for idx, (lr, alpha) in enumerate(hyperparams_combinations):
 
     scout_trainer = Trainer(
             input_size = x_i_remaining.shape[1],
-            units_list = config.UNITS_LIST,
-            n_outputs = config.N_OUTPUTS,
-            f_act = config.FUN_ACT,
+            units_list = cup_config.UNITS_LIST,
+            n_outputs = cup_config.N_OUTPUTS,
+            f_act = cup_config.FUN_ACT,
             learning_rate = lr,
-            batch = config.BATCH,         
+            batch = cup_config.BATCH,         
             epochs = scouting_epochs,     
             early_stopping = True,        
-            epsilon = config.EPSILON * 10.,
-            patience = config.PATIENCE,
-            momentum = config.MOMENTUM,
+            epsilon = cup_config.EPSILON * 10.,
+            patience = cup_config.PATIENCE,
+            momentum = cup_config.MOMENTUM,
             alpha_mom = alpha,            
-            split = config.SPLIT
+            split = cup_config.SPLIT
         )
 
     final_mee = scout_trainer.fit(x_i_remaining, d)
@@ -87,19 +87,19 @@ print("----------------------------------------------------------------")
 # Istanziamo il Trainer finale
 final_trainer = Trainer(
         input_size=x_i_remaining.shape[1],
-        n_hidden1=config.N_HIDDENL1,
-        n_hidden2=config.N_HIDDENL2,
-        n_outputs=config.N_OUTPUTS,
-        f_act=config.FUN_ACT,
+        n_hidden1=cup_config.N_HIDDENL1,
+        n_hidden2=cup_config.N_HIDDENL2,
+        n_outputs=cup_config.N_OUTPUTS,
+        f_act=cup_config.FUN_ACT,
         learning_rate=best_lr,          
-        batch=config.BATCH,
-        epochs=config.EPOCHS,          
-        early_stopping=config.EARLY_STOPPING, 
-        epsilon=config.EPSILON,         
-        patience=config.PATIENCE,
-        momentum=config.MOMENTUM,
+        batch=cup_config.BATCH,
+        epochs=cup_config.EPOCHS,          
+        early_stopping=cup_config.EARLY_STOPPING, 
+        epsilon=cup_config.EPSILON,         
+        patience=cup_config.PATIENCE,
+        momentum=cup_config.MOMENTUM,
         alpha_mom=best_alpha,           
-        split=config.SPLIT,
+        split=cup_config.SPLIT,
         verbose=True
     )
 

@@ -8,7 +8,7 @@ PATH_DT = "data/training_data/ML-CUP25-TR.csv"
 
 
 # ======== UNITS SIZE ========
-UNITS_LIST = [256, 256, 128]
+UNITS_LIST = [32, 64, 128, 64, 32]
 N_OUTPUTS = 4
 
 
@@ -22,7 +22,7 @@ LEARNING_RATE = 0.00005   #<- Funziona in batch ma da applicare il criterio di s
 # PRIMA IMPLEMENTAZIONE: LINEARE # 
 USE_DECAY = True
 DECAY_FACTOR = 0.99
-DECAY_STEP = 150
+DECAY_STEP = 1000
 
 
 # ========= BATCH ============
@@ -32,7 +32,7 @@ BATCH = True
 # --------------------- STOP CRITERIA:
 
 # ======== N EPOCHS ==========
-EPOCHS = 3000 #usato anche per determinare il numero di epoche per ogni run di grid search, 3% epochs ogni run
+EPOCHS = 30000 #usato anche per determinare il numero di epoche per ogni run di grid search, 3% epochs ogni run
 # ======== Early Stopping oon/off =============
 EARLY_STOPPING = False
 # gradient_norm < EPSILON, quindi il gradiente non cresce abbastanza,
@@ -54,5 +54,5 @@ ALPHA_MOM = 0.9
 
 # --------------------- HOLD OUT VALIDATION (SPLIT = percentuale di pattern tenuti da parte per la validation)
 
-SPLIT = 20
-
+RUN_HOLD_OUT_VALIDATION= True #toggle per runnare la validation in coda al training
+SPLIT = 40
