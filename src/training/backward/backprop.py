@@ -1,7 +1,7 @@
 import numpy as np
 import math as math
 from typing import Callable, List
-
+from src.activationf import sigmoid
 
 Array2D = np.ndarray
 Array1D = np.ndarray
@@ -24,8 +24,8 @@ def delta_k(d: Array1D, x_k: Array1D) -> Array1D:
     dk = np.zeros(x_k.size)
 
     # Aggiorna il vettore deltak con la differenza tra target e previsione * la derivata della funzione lineare quindi 1
-    dk = (d - x_k) # * 1 # <- Versione vettorializzata
-
+    #dk = (d - x_k) # * 1 # <- Versione vettorializzata
+    dk = (d - x_k) * sigmoid.sigmaf(x_k, 1, True)  # <- per activation function sigmoide nell'output layer (MONK PROBLEMS)
     """
     for kunit in range(x_k.size):
         # Aggiorna il vettore deltak con la differenza tra target e previsione * la derivata della funzione lineare quindi 1

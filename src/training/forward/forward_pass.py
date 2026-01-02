@@ -1,6 +1,7 @@
 import numpy as np
 from typing import Callable
-
+import config
+from src.activationf import sigmoid
 # Tipi utili per chiarezza
 Array2D = np.ndarray
 Array1D = np.ndarray
@@ -59,7 +60,9 @@ def forward_output(x_j: Array1D, w_kj: Array2D) -> Array1D:
 
 
     x_k = np.dot(x_j, w_kj[1:]) + w_kj[0] # <- Vettorializzata
-
+    if config.MONK == True:
+        x_k=sigmoid.sigmaf(x_k)
+    #    x_k = (x_k > 0.5).astype(int)
     """ Non vettorializzata
     for kunit in range(n_outputs):
 

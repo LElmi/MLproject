@@ -12,3 +12,22 @@ def load_data(path) -> tuple[pd.DataFrame, pd.DataFrame] :
 
     return df_input_layer, df_output_layer
 
+
+def load_monks_data(path) -> tuple[pd.DataFrame, pd.Series]:
+    data = pd.read_csv(path, delimiter=' ', header=None, usecols=range(7))
+
+    X_raw = data.iloc[:, :-1]
+    y = data.iloc[:, -1]  # 0/1 target
+
+    X_raw.columns = [f'feature_{i}' for i in range(1, 7)]
+    y.name = 'target'
+
+    X = pd.get_dummies(X_raw, columns=X_raw.columns)
+
+    X = X.astype(float)
+    y = y.astype(float)
+
+    return X, y
+
+
+

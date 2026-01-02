@@ -42,4 +42,12 @@ def plot_errors(trainer_instance, tempo_di_training: float):
     ax2.legend()
 
     plt.tight_layout(rect=[0, 0.03, 1, 0.95]) # Lascia spazio per il suptitle
-    plt.show()
+    plt.savefig("Training mee")
+def plot_validation_errors(mee_values):
+    plt.figure(figsize=(10, 6))
+    plt.plot(range(1, len(mee_values) + 1), mee_values, marker='o', linestyle='-', color='b')
+    plt.title('Mean Euclidean Error over Epochs')
+    plt.xlabel('Epoch')
+    plt.ylabel('Mean Euclidean Error')
+    plt.grid(True)
+    plt.savefig("validation mee")

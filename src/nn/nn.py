@@ -3,6 +3,7 @@ from src.training.forward.forward_pass import  forward_all_layers
 from src.activationf.relu import relu
 
 from typing import Callable
+import config
 # Tipi utili per chiarezza
 Array2D = np.ndarray
 Array1D = np.ndarray
@@ -102,7 +103,8 @@ class NN:
         #   aggiornata.
         #self.w_kj2[1:, :] += self.learning_rate * np.outer(self.x_j2, dk)
 
-        self.w_kj2 += self.learning_rate * delta_wk
+        self.w_kj2 += self.learning_rate * delta_wk #- config.LAMBDA * self.w_kj2
+        #self.w_kj2 -= self.learning_rate * (delta_wk + config.LAMBDA * self.w_kj2)
 
         # --- Aggiornamento Pesi Output (w_kj2) - Versione non vettorializzata ---
 
@@ -119,8 +121,8 @@ class NN:
 
         # --- Aggiornamento Pesi Hidden 2 (w_j2j1) - Versione vettorializzata ---
 
-        self.w_j2j1 += self.learning_rate * delta_wj2j1 
- 
+        self.w_j2j1 += self.learning_rate * delta_wj2j1 #- config.LAMBDA * self.w_j2j1
+        #self.w_j2j1 -= self.learning_rate * (delta_wj2j1 + config.LAMBDA * self.w_j2j1)
 
         # --- Aggiornamento Pesi Hidden 2 (w_j2j1) - Versione non vettorializzata ---
         
@@ -134,7 +136,8 @@ class NN:
 
         # --- Aggiornamento Pesi Hidden 1 (w_j1i) Versione vettorializzata ---
 
-        self.w_j1i += self.learning_rate * delta_wj1i
+        self.w_j1i += self.learning_rate * delta_wj1i#- config.LAMBDA * self.w_j1i
+        #self.w_j1i -= self.learning_rate * (delta_wj1i + config.LAMBDA * self.w_j1i)
 
         # --- Aggiornamento Pesi Hidden 1 (w_j1i) Versione non vettorializzata ---
 

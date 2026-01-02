@@ -10,8 +10,8 @@ from src.training.backward.backprop import *
 from src.utils import visualization as vs
 from src.utils import save_model as sm
 from typing import Callable, Dict, Tuple, List
-
-
+from scripts.run_validation import validation_during_training
+from src.utils import log_entropy
 # Tipi utili per chiarezza
 Array2D = np.ndarray
 Array1D = np.ndarray
@@ -40,7 +40,8 @@ class Trainer:
                  patience: int,
                  momentum: bool,
                  alpha_mom: float,
-                 split: float):
+                 split: float,
+                 lambda1: float):
         
 
         self.f_act = f_act
@@ -51,6 +52,8 @@ class Trainer:
         self.momentum = momentum
         self.alpha_mom = alpha_mom
         self.split = split
+        self.lambda1 = lambda1
+
         #self.stopping_criteria = stopping_criteria
         self.early_stopping = early_stopping
         # Inizializza la rete neurale
@@ -93,13 +96,14 @@ class Trainer:
         # Per PLOT
         vs.plot_errors(self, time.perf_counter() - start_time)
 
-    def train_with_early_stopping(self, input_matrix, d_matrix):
+    def train_with_early_stopping(self, input_matrix, d_matrix, validation_set, validation_d):
 
         n_patterns = input_matrix.shape[0]
         gradient_misbehave = 0
         prev_gradient_norm_epoch = None
         epoch = 0
-        
+        validation_mee = np.array([])
+        validation_mse = np.array([])
         start_time = time.perf_counter()
         print(f"Inizio training...")
             
@@ -130,20 +134,28 @@ class Trainer:
                                                                                 epoch_results["grad_norm"],
                                                                                 n_patterns)
 
-            print("|| epooch n° ", epoch, ", total mee error: ", epoch_results["mee"], " ||")
+            mee, mse, x_predetti=validation_during_training(validation_set, validation_d, self.neuraln.w_j1i,self.neuraln.w_j2j1,self.neuraln.w_kj2)
+            validation_mee=np.append(validation_mee,[mee])
+            validation_mse=np.append(validation_mse,[mse])
+            print("|| epooch n° ", epoch, ", total mee error: ", epoch_results["mee"], "validation error", validation_mee[epoch -1], "||")
 
 
-        print(" Total mee error: ", epoch_results["mee"]) 
-        print(" Total mse error: ", epoch_results["mse"]) 
+
+        print(" Training set mee: ", epoch_results["mee"])
+        print(" Total mse error: ", epoch_results["mse"])
+        print(" Log Entropy: ", log_entropy.binary_cross_entropy_loss(validation_d, x_predetti))
         print(" Tempo di training: ", time.perf_counter() - start_time)
 
 
 
         print("\n--- Training Completato ---\n")
-        sm.save_model(self.neuraln.w_kj2,self.neuraln.w_j2j1,self.neuraln.w_j1i)
-                
+        weights_filename, architecture_filename=sm.save_model(self.neuraln.w_kj2,self.neuraln.w_j2j1,self.neuraln.w_j1i)
+
         # Per PLOT
         vs.plot_errors(self, time.perf_counter() - start_time)
+        vs.plot_validation_errors(validation_mee)
+        vs.plot_validation_errors(validation_mse)
+        return weights_filename,architecture_filename
 
 
 
@@ -187,7 +199,7 @@ class Trainer:
                     self.neuraln.w_j2j1, self.neuraln.x_j1, self.neuraln.w_j1i, x, self.f_act
                 )
 
-            
+
             epoch_grad += grad_norm
 
 
@@ -209,7 +221,7 @@ class Trainer:
             self.neuraln.update_weights(dwk_epoch, dwj2j1_epoch, dwj1i_epoch)
 
         return {
-            'mee': epoch_mee / n_patterns,
+            'mee': epoch_mee / n_patterns + self.lambda1 ,
             'mse': epoch_mse / n_patterns,
             'grad_norm': epoch_grad / n_patterns
         }

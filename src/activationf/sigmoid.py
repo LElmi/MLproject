@@ -1,10 +1,10 @@
 import math
-
+import numpy as np
 ### ACTIVATION FUNCTION SIGMA
 #.  arg -> alpha is for the slop
 
 def sigmaf(x, alpha=1, derivata: bool = False):
-
+    x = np.clip(x, -50, 50)
     if derivata: 
         s = sigmaf(x, alpha)
         return s * (1 - s)

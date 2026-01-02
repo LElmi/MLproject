@@ -30,8 +30,8 @@ def save_model(output_HL2, HL2_HL1, HL1_input ):
             for row in weight_matrix:
                 f.write(','.join(map(str, row)) + '\n')
             f.write('\n')
-
-    with open('architecture.json', 'w') as f:
+    architecture_filename = 'architecture.json'
+    with open(architecture_filename, 'w') as f:
         json.dump(architecture, f)
 
-
+    return weights_filename,architecture_filename

@@ -1,5 +1,5 @@
 import json
-
+import numpy as np
 def load_model(weights_filename, architecture_filename):
     loaded_weights = {}
     with open(weights_filename, 'r') as f:
@@ -12,7 +12,8 @@ def load_model(weights_filename, architecture_filename):
                 loaded_weights[current_layer] = []
             elif line:
                 loaded_weights[current_layer].append(list(map(float, line.split(','))))
-
+    for layer in loaded_weights:
+        loaded_weights[layer] = np.array(loaded_weights[layer])
     # Load the architecture
     with open(architecture_filename, 'r') as f:
         loaded_architecture = json.load(f)
