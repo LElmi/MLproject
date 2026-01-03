@@ -5,7 +5,7 @@ from src.activationf.leaky_relu import leaky_relu
 
 # ======== PATHS DATA ========
 #PATH_DT = "../data/training_data/ML-CUP25-TR.csv"  #<- CUP
-PATH_DT = "../data/monk/train_data/monks-1.train"
+PATH_DT = "../data/training_data/monks-1.train"
 MONK= True #<- toggle per il monk
 
 # ======== UNITS SIZE ========
