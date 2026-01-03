@@ -57,7 +57,7 @@ gs = GridSearch(
     split = [0.2]
 )
 
-best_config, best_mee = gs.run(tr_input, tr_target, 100)
+best_config, best_mee = gs.run(tr_input, tr_target, scouting_epochs=100)
 print(" 🏆🚀 BEST CONFIG: \n", best_config, "\n\n\n", "BEST MEE: ", best_mee)
 
 '''

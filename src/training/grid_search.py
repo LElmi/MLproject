@@ -1,5 +1,7 @@
 import itertools
 from src.training.trainer.trainer import Trainer
+
+
 class GridSearch:
     """
     Creata per gestire il caso esaustivo e caso intervalli
@@ -44,7 +46,7 @@ class GridSearch:
             trainer = Trainer(
                 input_size=x_train.shape[1],
                 epochs=scouting_epochs,
-                **config_dict 
+                **config_dict
             )
             
             # Per ogni combinazione chiama il fit

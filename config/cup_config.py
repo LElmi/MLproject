@@ -4,11 +4,11 @@ from src.activationf.sigmoid import sigmaf
 # --------------------  NN config:
 
 # ======== PATHS DATA ========
-PATH_DT = "data/training_data/ML-CUP25-TR.csv"
+PATH_DT = "data/cup/training_data/ML-CUP25-TR.csv"
 
 
 # ======== UNITS SIZE ========
-UNITS_LIST = [32, 64, 128, 64, 32]
+UNITS_LIST = [8]
 N_OUTPUTS = 4
 
 

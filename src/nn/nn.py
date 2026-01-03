@@ -65,6 +65,8 @@ class NN:
 
         # Enumerate restituisce una coppia con il primo elemento l'indice e il secondo l'oggetto della lista
         for i, weights in enumerate(self.weights_matrix_list):
+            
+            #print("\n\n\n\self.weights_matrix_list: ", self.weights_matrix_list)
 
             # weights[0] è il bias, weights[1:] sono i pesi collegati ad altre unità
             net = np.dot(current_input, weights[1:]) + weights[0]
@@ -80,6 +82,8 @@ class NN:
             
             self.layer_results_list[i] = output
             current_input = output
+
+            #print("\n\n\n\vl_layer_results list: ", self.layer_results_list)
 
         return self.layer_results_list
 
