@@ -4,11 +4,11 @@ from src.activationf.sigmoid import sigmaf
 # --------------------  NN config:
 
 # ======== PATHS DATA ========
-PATH_DT = "data/training_data/ML-CUP25-TR.csv"
+PATH_DT = "../data/cup/training_data/ML-CUP25-TR.csv"
 
 
 # ======== UNITS SIZE ========
-UNITS_LIST = [32, 64, 128, 64, 32]
+UNITS_LIST = [8]
 N_OUTPUTS = 4
 
 
@@ -32,9 +32,9 @@ BATCH = True
 # --------------------- STOP CRITERIA:
 
 # ======== N EPOCHS ==========
-EPOCHS = 30000 #usato anche per determinare il numero di epoche per ogni run di grid search, 3% epochs ogni run
+EPOCHS = 3000 #usato anche per determinare il numero di epoche per ogni run di grid search, 3% epochs ogni run
 # ======== Early Stopping oon/off =============
-EARLY_STOPPING = False
+EARLY_STOPPING = True
 # gradient_norm < EPSILON, quindi il gradiente non cresce abbastanza,
 # serve per lo stopping criteria come limite inferiore, in percentuale
 # ======== EPSILON ==========
@@ -55,4 +55,4 @@ ALPHA_MOM = 0.9
 # --------------------- HOLD OUT VALIDATION (SPLIT = percentuale di pattern tenuti da parte per la validation)
 
 RUN_HOLD_OUT_VALIDATION= True #toggle per runnare la validation in coda al training
-SPLIT = 40
+SPLIT = 60

@@ -1,109 +1,86 @@
+from src.training.trainer import trainer
+from src.training.trainer.trainer import Trainer
+from src.training.grid_search import GridSearch
 import numpy as np
-import itertools
-import config.cup_config as cup_config
-from src.training.train.trainer import Trainer
-from src.utils import *
+from src.utils.load_data import load_monks_data
+#from scripts.run_validation import *
+from src.training.validation.hold_out import hold_out_validation
+from src.utils.load_model import *
+from src.activationf.relu import relu
+from src.utils.normalize_data import normalize_data
+from src.activationf.sigmoid import sigmaf
+from src.activationf.leaky_relu import leaky_relu
+from config import monk_config
 
 # Carica dati
-x_i, d = load_data(cup_config.PATH_DT)
-x_i = x_i.to_numpy()
-d = d.to_numpy()
 
-x_i_remaining, validation_i = traindata_split_in_ts_vs(x_i, cup_config.SPLIT)
-x_i_remaining, x_min, x_max = normalize_data(x_i_remaining)
-
-x_i_remaining, x_min, x_max = normalize_data(x_i)
-
-denom = x_max - x_min
-denom[denom == 0] = 1.0
-validation_i = (validation_i - x_min) / denom
-d = normalize_data(d)
-
-# Parametri da esplorare in grid search
-
-learning_rate_array = np.logspace(-5, -3, 10)
-alpha_array = np.linspace(0.25, 0.75, 10)
-
-# Fa il prodotto cartesiano dei valori, lo scorre nel ciclo for
-hyperparams_combinations = list(itertools.product(learning_rate_array, alpha_array))
-
-scouting_epochs = int(round(cup_config.EPOCHS*0.05)) #5% delle epoche viene usato per ogni run della grid search
-best_mee = float('inf')
-best_config = None
-
-print("----------------------------------------------------------------")
-print(f"INIZIO GRID SEARCH")
-print(f"Configurazioni totali: {len(hyperparams_combinations)}")
-print(f"Epoche di scouting per config: {scouting_epochs}")
-print("----------------------------------------------------------------")
-
-# ============================================================
-# ESECUZIONE GRID SEARCH
-# ============================================================
-
-# Scorre la lista di combinazioni esplorate
-for idx, (lr, alpha) in enumerate(hyperparams_combinations):
-    
-    print(f"Esplorazione {idx+1}/{len(hyperparams_combinations)} -> LR: {lr:.5f}, Alpha: {alpha:.2f}", end="")
-
-    scout_trainer = Trainer(
-            input_size = x_i_remaining.shape[1],
-            units_list = cup_config.UNITS_LIST,
-            n_outputs = cup_config.N_OUTPUTS,
-            f_act = cup_config.FUN_ACT,
-            learning_rate = lr,
-            batch = cup_config.BATCH,         
-            epochs = scouting_epochs,     
-            early_stopping = True,        
-            epsilon = cup_config.EPSILON * 10.,
-            patience = cup_config.PATIENCE,
-            momentum = cup_config.MOMENTUM,
-            alpha_mom = alpha,            
-            split = cup_config.SPLIT
-        )
-
-    final_mee = scout_trainer.fit(x_i_remaining, d)
-    print(f"MEE: {final_mee:.5f}")
-
-    if final_mee<best_mee:
-        best_mee=final_mee
-        best_config = (lr, alpha)
-        print(f"   >>> NUOVO RECORD! LR={lr:.5f}, Alpha={alpha:.2f}")
+x_i, d = load_monks_data(monk_config.PATH_DT)
 
 
-# ============================================================
-# TRAINING FINALE (BEST MODEL)
-# ============================================================
+x_i = x_i.to_numpy().astype(np.float64)
+d = d.to_numpy().astype(np.float64)
 
-best_lr, best_alpha = best_config
+x_i, x_min, x_max = normalize_data(x_i)
 
-print("----------------------------------------------------------------")
-print("GRID SEARCH TERMINATA")
-print(f"Miglior Configurazione: LR={best_lr}, Alpha={best_alpha}")
-print(f"Miglior MEE Scouting: {best_mee}")
-print("Avvio Training Finale...")
-print("----------------------------------------------------------------")
 
-# Istanziamo il Trainer finale
-final_trainer = Trainer(
-        input_size=x_i_remaining.shape[1],
-        n_hidden1=cup_config.N_HIDDENL1,
-        n_hidden2=cup_config.N_HIDDENL2,
-        n_outputs=cup_config.N_OUTPUTS,
-        f_act=cup_config.FUN_ACT,
-        learning_rate=best_lr,          
-        batch=cup_config.BATCH,
-        epochs=cup_config.EPOCHS,          
-        early_stopping=cup_config.EARLY_STOPPING, 
-        epsilon=cup_config.EPSILON,         
-        patience=cup_config.PATIENCE,
-        momentum=cup_config.MOMENTUM,
-        alpha_mom=best_alpha,           
-        split=cup_config.SPLIT,
-        verbose=True
-    )
 
-# Avvia il training (verbose=True per vedere i progressi)
-final_trainer.fit(x_i_remaining, d)
+if monk_config.RUN_HOLD_OUT_VALIDATION:
 
-"""
+    tr_input, tr_target, vl_input, vl_targets = hold_out_validation(x_i, d, monk_config.SPLIT)
+# GridSearch è una classe che usa **kwargs come argomento, ergo, 
+# non ha limiti di argomenti e combinazioni, 
+# al suo interno usa la classe TRAIN! Da tenere in considerazione se si
+# apportano modifiche lì!
+gs = GridSearch(
+    units_list = [[4], [8]],
+    n_outputs = [monk_config.N_OUTPUTS],
+    f_act=[relu, sigmaf, leaky_relu],
+    learning_rate = [0.001, 0.01, 0.005],
+    use_decay = [True, False],
+    decay_factor = [0.99, 0.95],
+    decay_step = [100],
+    batch = [monk_config.BATCH],
+    #epochs=[100],
+    early_stopping = [monk_config.EARLY_STOPPING],
+    epsilon = [monk_config.EPSILON],
+    patience = [monk_config.PATIENCE],
+    momentum = [monk_config.MOMENTUM],
+    alpha_mom = [[0.9],[0.5]],
+    split = [monk_config.SPLIT],
+    verbose = [monk_config.VERBOSE],
+    validation = [monk_config.RUN_HOLD_OUT_VALIDATION],
+)
+
+
+
+'''
+
+# Avvia training
+trainer = Trainer(tr_input.shape[1],
+                      monk_config.UNITS_LIST,
+                      monk_config.N_OUTPUTS,
+                      monk_config.FUN_ACT,
+                      monk_config.LEARNING_RATE,
+                      monk_config.USE_DECAY,
+                      monk_config.DECAY_FACTOR,
+                      monk_config.DECAY_STEP,
+                      monk_config.BATCH,
+                      monk_config.EPOCHS,
+                      monk_config.EARLY_STOPPING,
+                      monk_config.EPSILON,
+                      monk_config.PATIENCE,
+                      monk_config.MOMENTUM,
+                      monk_config.ALPHA_MOM,
+                      monk_config.SPLIT,
+                      monk_config.VERBOSE,
+                      monk_config.RUN_HOLD_OUT_VALIDATION)
+
+if (monk_config.EARLY_STOPPING == True):
+    mee_tr, mse_tr, mee_vl, mse_vl =trainer.fit(tr_input, tr_target, 
+                             vl_input, vl_targets)
+else:
+
+
+    trainer.fit(tr_input, tr_target, vl_input, vl_targets)'''
+best_config, best_mee = gs.run(tr_input, tr_target,vl_input,vl_targets, scouting_epochs=100)
+print(" 🏆🚀 BEST CONFIG: \n", best_config, "\n\n\n", "BEST MEE: ", best_mee)

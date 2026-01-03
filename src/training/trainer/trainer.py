@@ -3,13 +3,14 @@
 import numpy as np
 import time
 from typing import Callable, Dict, Tuple, List
-
+from src.utils.compute_error import *
 import config.cup_config as config
 from src.nn.nn import NN
 from src.training.trainer.forward.forward_pass import *
 from src.training.trainer.backward.backprop import compute_delta_all_layers_list
-from src.utils import visualization as vs
+from src.utils.visualization import *
 from src.utils import save_model as sm
+from src.training.validation.validation_monk import accuracy
 
 
 # Tipi utili per chiarezza
@@ -43,8 +44,9 @@ class Trainer:
                  momentum: bool,
                  alpha_mom: float,
                  split: float,
-                 verbose: bool = False):
-        
+                 verbose: bool = False,
+                 validation: bool = True):
+
 
         self.f_act = f_act
         self.batch = batch
@@ -59,6 +61,7 @@ class Trainer:
         self.use_decay = use_decay
         self.decay_factor = decay_factor
         self.decay_step = decay_step
+        self.validation = validation
 
         # Inizializza la rete neurale
         self.neuraln = NN(
@@ -70,12 +73,16 @@ class Trainer:
         
         self.mee_error_history = [] # <- Quella per la CUP, meno sensibile agli outliers
         self.mse_error_history = []
+
+        self.mee_vl_error_history = []
+        self.mse_vl_error_history = []
+        self.accuracy_history = []
         # self.total_error_array = []
         self.verbose = verbose
 
         self.old_deltas = None # <-- Necessario per il momentum
 
-    def fit(self, input_matrix, d_matrix):
+    def fit(self, input_matrix, d_matrix, vl_input = None, vl_targets = None):
         """
         Metodo centrale della classe Train. Fa le seguenti cose:
             - Prende come argomenti:
@@ -101,11 +108,23 @@ class Trainer:
             #print("\n\n\n\n\nsize_x: ", input_matrix.shape, "\n\n\n\n\n", "size_d: ", d_matrix.shape)
             epoch_results = self._run_epoch(input_matrix, d_matrix, n_patterns, epoch)
 
-            self.mee_error_history.append(epoch_results["mee"])
-            self.mse_error_history.append(epoch_results["mse"])
+            self.mee_error_history.append(epoch_results["mee_tr"])
+            self.mse_error_history.append(epoch_results["mse_tr"])
+
+            if self.validation:
+                epoch_vl_results = self._run_epoch_validation(vl_input, vl_targets)
+
+                self.mee_vl_error_history.append(epoch_vl_results["mee_vl"])
+                self.mse_vl_error_history.append(epoch_vl_results["mse_vl"])
+                
+                if "accuracy" in epoch_vl_results:
+                    self.accuracy_history.append(epoch_vl_results["accuracy"])
+
+
+
 
             if self.verbose and epoch % 10 == 0:
-                print("|| epooch n° ", epoch, ", total mee error: ", epoch_results["mee"], " ||")
+                print("|| epooch n° ", epoch, ", total mee error: ", epoch_results["mee_tr"], " ||")
 
             if self.early_stopping:
                 prev_gradient_norm, gradient_misbehave = self._check_patience(
@@ -115,16 +134,28 @@ class Trainer:
                     break
 
         if self.verbose: 
-            print(" Total mee error: ", epoch_results["mee"])
-            print(" Total mse error: ", epoch_results["mse"])
+            print(" Total mee error: ", epoch_results["mee_tr"])
+            print(" Total mse error: ", epoch_results["mse_tr"])
             print(" Tempo di training: ", time.perf_counter() - start_time)
             print("\n--- Training Completato ---\n")
-            vs.plot_errors(self, time.perf_counter() - start_time)
 
-        return self.mee_error_history[-1]
+            if self.validation: 
+                plot_errors_with_validation_error(self, time.perf_counter() - start_time)
+            else:
+                plot_errors(self, time.perf_counter() - start_time)
+
+
+
+        return (self.mee_error_history[-1], self.mse_error_history[-1], 
+                self.mee_vl_error_history[-1] if self.validation else 0.0,
+                self.mse_vl_error_history[-1] if self.validation else 0.0) 
     
 
-    def _run_epoch(self, input_matrix: np.ndarray, d_matrix: np.ndarray, n_patterns: int, epoch: int) -> Dict[str, float]:
+    def _run_epoch(self, 
+                   input_matrix: np.ndarray, 
+                   d_matrix: np.ndarray, 
+                   n_patterns: int, 
+                   epoch: int) -> Dict[str, float]:
         """
         Metodo che nasce con l'esigenza di portare un po' di logica fuori dal train,
         runna una epoca, restitutuendo le informazioni sull'errore.
@@ -180,7 +211,7 @@ class Trainer:
                     batch_deltas[i] += deltas[i]
             # CASO ONLINE
             else:
-                self.neuraln.update_weights(deltas)
+                self.neuraln.update_weights(deltas, eta=self.learning_rate)
                 if self.momentum: self.old_deltas = deltas
 
         # Se fine epoca e se batch, aggiorna gli update weights 
@@ -196,8 +227,8 @@ class Trainer:
             if self.momentum: self.old_deltas = avg_deltas
 
         return {
-            'mee': epoch_mee / n_patterns,
-            'mse': epoch_mse / n_patterns,
+            'mee_tr': epoch_mee / n_patterns,
+            'mse_tr': epoch_mse / n_patterns,
             'grad_norm': epoch_grad / n_patterns
         }
     
@@ -215,4 +246,38 @@ class Trainer:
                 gradient_misbehave = 0
         
         return current_grad_norm, gradient_misbehave
+    
 
+    def _run_epoch_validation(self, vl_input, vl_target):
+        n_patterns = vl_input.shape[0]
+        epoch_mee, epoch_mse, epoch_grad = 0.0, 0.0, 0.0
+        #indices = np.arange(n_patterns)
+        #if not self.batch: np.random.shuffle(indices)
+
+        epoch_mee_vl, epoch_mse_vl  = 0.0, 0.0
+        correctly_classified, misclassified = 0.0,0.0
+        outputs=np.zeros(len(vl_target))
+        for idx in range(n_patterns):
+
+            x, d = vl_input[idx], vl_target[idx]
+
+            vl_layer_results = self.neuraln.forward_network(x)
+            vl_final_output = vl_layer_results[-1]
+            outputs[idx]=vl_final_output
+
+
+
+            epoch_mee_vl += mean_euclidean_error(vl_final_output, d)
+            epoch_mse_vl += mean_squared_error(vl_final_output, d)
+
+        predictions,correctly_classified,misclassified= accuracy(outputs, vl_target)
+
+        print("classificati correttamente:", correctly_classified, " errori:", misclassified, "accuratezza:",
+              correctly_classified/ (correctly_classified+ misclassified) * 100, "%")
+        print("predictions: ", predictions)
+        print("targets: ", vl_target)
+
+        return {
+            'mee_vl': epoch_mee_vl,
+            'mse_vl': epoch_mse_vl,
+        }
