@@ -4,12 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="64c73e0f-2842-4ff3-84d4-d4d0e48b01de" name="Changes" comment="Applicazione al MONK">
+    <list default="true" id="64c73e0f-2842-4ff3-84d4-d4d0e48b01de" name="Changes" comment="risolte alcune problematiche dell'applicazione al monk">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/config.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/Ensemble_learning.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/Ensemble_learning.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/scripts/Training mee.png" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/Training mee.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/run_training.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/run_training.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/scripts/validation mee.png" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/validation mee.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/training/backward/backprop.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/training/backward/backprop.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/utils/save_model.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/utils/save_model.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -319,7 +321,15 @@
       <option name="project" value="LOCAL" />
       <updated>1767362742737</updated>
     </task>
-    <option name="localTasksCounter" value="11" />
+    <task id="LOCAL-00011" summary="risolte alcune problematiche dell'applicazione al monk">
+      <option name="closed" value="true" />
+      <created>1767376721993</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1767376721993</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -341,16 +351,7 @@
     <MESSAGE value="oops commit sul master, mi sono sbagliato, ho implementato il metodo grid_search_with_early_stopping nella classe Trainer, sarà una cavolata?" />
     <MESSAGE value="inserito le funzioni load_model.py e save_model.py" />
     <MESSAGE value="Applicazione al MONK" />
-    <option name="LAST_COMMIT_MESSAGE" value="Applicazione al MONK" />
-  </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/src/utils/visualization.py</url>
-          <option name="timeStamp" value="1" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
+    <MESSAGE value="risolte alcune problematiche dell'applicazione al monk" />
+    <option name="LAST_COMMIT_MESSAGE" value="risolte alcune problematiche dell'applicazione al monk" />
   </component>
 </project>

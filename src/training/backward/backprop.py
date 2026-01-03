@@ -25,7 +25,8 @@ def delta_k(d: Array1D, x_k: Array1D) -> Array1D:
 
     # Aggiorna il vettore deltak con la differenza tra target e previsione * la derivata della funzione lineare quindi 1
     #dk = (d - x_k) # * 1 # <- Versione vettorializzata
-    dk = (x_k - d) * x_k * (1 - x_k)   # <- per activation function sigmoide nell'output layer (MONK PROBLEMS)
+    #dk = (x_k - d) * x_k * (1 - x_k)   # <- per activation function sigmoide nell'output layer (MONK PROBLEMS)
+    dk = (d-x_k)*sigmoid.sigmaf(x_k,1.0, True)
     """
     for kunit in range(x_k.size):
         # Aggiorna il vettore deltak con la differenza tra target e previsione * la derivata della funzione lineare quindi 1

@@ -17,12 +17,8 @@ def save_model(output_HL2, HL2_HL1, HL1_input ):
         ]
     }
 
-    # Get current date and time
     current_time = datetime.now()
-    # Format the date and time for the filename (e.g., 2025-10-10_14-30)
     time_str = current_time.strftime("%Y-%m-%d_%H-%M")
-
-    # Save the weights with the current date and hour in the filename
     weights_filename = f'weights_{time_str}.txt'
     with open(weights_filename, 'w') as f:
         for layer, weight_matrix in weights.items():
