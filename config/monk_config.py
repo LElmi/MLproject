@@ -56,7 +56,7 @@ MOMENTUM = True
 ALPHA_MOM = 0.5 #<- viene usato come valore centrale per la grid search
 # --------------------- HOLD OUT VALIDATION (SPLIT = percentuale di pattern tenuti da parte per la validation
 
-RUN_HOLD_OUT_VALIDATION= True #toggle per runnare la validation in coda al training
+RUN_VALIDATION= True #toggle per runnare la validation in coda al training
 SPLIT = 40
 
 #------------------ Regolarizzazione
@@ -64,3 +64,9 @@ LAMBDA=0.01
 
 
 VERBOSE = True
+
+
+
+# --------------------- MAX GRADIENT NORM FOR CLIPPING 
+
+MAX_GRADIENT_NORM = 5

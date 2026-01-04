@@ -1,14 +1,12 @@
 from src.training.trainer.trainer import Trainer
 import numpy as np
-from src.utils.load_data import load_data
-from src.utils.normalize_data import normalize_data
 from src.training.validation.hold_out import hold_out_validation
 #from scripts.run_validation import *
 from config import cup_config
-from src.utils.load_model import *
 from src.training.grid_search import GridSearch
 from src.activationf.relu import relu
 from src.activationf.sigmoid import sigmaf
+from src.utils import * 
 
 
 # Carica dati

@@ -56,3 +56,7 @@ ALPHA_MOM = 0.9
 
 RUN_HOLD_OUT_VALIDATION= True #toggle per runnare la validation in coda al training
 SPLIT = 40
+
+# --------------------- MAX GRADIENT NORM FOR CLIPPING 
+
+MAX_GRADIENT_NORM = 5

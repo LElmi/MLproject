@@ -72,7 +72,7 @@ def plot_errors_with_validation_error(trainer, training_time: float, save_path="
     plt.savefig(full_path, dpi=300)
     print(f"✅ Grafico salvato in: {full_path}")
     
-    plt.show()
+    plt.savefig("plot1.png")
 
 def plot_errors(trainer, training_time: float, save_path="../results/plots"):
     """Versione per training singolo (senza validation)."""
@@ -98,4 +98,4 @@ def plot_errors(trainer, training_time: float, save_path="../results/plots"):
     
     fname = _generate_filename("CUP_train_only")
     plt.savefig(os.path.join(dir_path, fname))
-    plt.show()
+    plt.savefig("plot2.png")

@@ -2,14 +2,12 @@ from src.training.trainer import trainer
 from src.training.trainer.trainer import Trainer
 from src.training.grid_search import GridSearch
 import numpy as np
-from src.utils.load_data import load_monks_data
-#from scripts.run_validation import *
 from src.training.validation.hold_out import hold_out_validation
-from src.utils.load_model import *
 from src.activationf.relu import relu
-from src.utils.normalize_data import normalize_data
 from src.activationf.sigmoid import sigmaf
+from src.utils.compute_accuracy import compute_accuracy
 from config import monk_config
+from src.utils import *
 
 # Carica dati
 
@@ -69,13 +67,18 @@ trainer = Trainer(tr_input.shape[1],
                       monk_config.PATIENCE,
                       monk_config.MOMENTUM,
                       monk_config.ALPHA_MOM,
+                      monk_config.MAX_GRADIENT_NORM,
                       monk_config.SPLIT,
                       monk_config.VERBOSE,
-                      monk_config.RUN_HOLD_OUT_VALIDATION)
+                      monk_config.RUN_VALIDATION) 
 
 if (monk_config.EARLY_STOPPING == True):
-    mee_tr, mse_tr, mee_vl, mse_vl =trainer.fit(tr_input, tr_target, 
-                             vl_input, vl_target)
+    mee_tr, mse_tr, mee_vl, mse_vl = trainer.fit(
+                                            tr_input, tr_target, 
+                                            vl_input, vl_target, 
+                                            metric_fn = compute_accuracy, 
+                                            metric_moden= 'max' # Vogliamo Massimizzare l'accuracy quindi quando scende triggera l'early stopping
+                                        )
 else:
 
 

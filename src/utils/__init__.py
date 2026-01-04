@@ -6,3 +6,5 @@ from .save_model import *
 from .split_data import *
 from .visualization import * 
 from .load_data import *
+from .compute_error import * 
+from .compute_accuracy import *
