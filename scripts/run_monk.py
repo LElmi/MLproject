@@ -105,7 +105,8 @@ print("miglior modello trovato tra quelli analizzati con la K fold cross validat
 
 
 
-# Avvia training
+# Avvia training normale, da aggiustare per farlo andare correttamente se non diamo vl_input e vl_targets alla classe Trainer
+# ha senso runnare il training sul migliore modello trovato tramite la K-fold? chi lo sa
 trainer = Trainer(x_i.shape[1],
                       monk_config.UNITS_LIST,
                       monk_config.N_OUTPUTS,
