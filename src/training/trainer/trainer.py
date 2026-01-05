@@ -111,7 +111,7 @@ class Trainer:
             self.mee_error_history.append(epoch_results["mee_tr"])
             self.mse_error_history.append(epoch_results["mse_tr"])
 
-            if self.validation:
+            if self.validation and vl_input is not None:
                 epoch_vl_results = self._run_epoch_validation(vl_input, vl_targets)
 
                 self.mee_vl_error_history.append(epoch_vl_results["mee_vl"])
@@ -124,7 +124,7 @@ class Trainer:
 
 
             if self.verbose and epoch % 10 == 0:
-                print("|| epooch n° ", epoch, ", total mee error: ", epoch_results["mee_tr"], " ||")
+                print("|| epoch n° ", epoch, ", total mee error: ", epoch_results["mee_tr"], " ||")
 
             if self.early_stopping:
                 prev_gradient_norm, gradient_misbehave = self._check_patience(
@@ -148,7 +148,9 @@ class Trainer:
 
         return (self.mee_error_history[-1], self.mse_error_history[-1], 
                 self.mee_vl_error_history[-1] if self.validation else 0.0,
-                self.mse_vl_error_history[-1] if self.validation else 0.0) 
+                self.mse_vl_error_history[-1] if self.validation else 0.0,
+                self.accuracy_history[-1] if "accuracy" in epoch_vl_results else 0.0
+                )
     
 
     def _run_epoch(self, 
@@ -280,4 +282,5 @@ class Trainer:
         return {
             'mee_vl': epoch_mee_vl,
             'mse_vl': epoch_mse_vl,
+            'accuracy':correctly_classified/ (correctly_classified+ misclassified)
         }

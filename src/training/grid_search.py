@@ -48,7 +48,7 @@ class GridSearch:
             )
             
             # Per ogni combinazione chiama il fit
-            current_mee_tr,current_mse_tr, current_mee_vl, current_mse_vl = trainer.fit(x_train, d_train, vl_input, vl_targets)
+            current_mee_tr,current_mse_tr, current_mee_vl, current_mse_vl,accuracy = trainer.fit(x_train, d_train, vl_input, vl_targets)
 
             print(f"Config {i+1}/{len(self.combinations)} | MEE in training: {current_mee_tr:.4f}")
             print(f"Config {i + 1}/{len(self.combinations)} | MEE in Validation: {current_mee_vl:.4f}")
