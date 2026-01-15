@@ -1,0 +1,1 @@
+{"layers": [{"type": "input", "units": 3}, {"type": "dense", "units": 4, "activation": "relu"}, {"type": "dense", "units": 2, "activation": "relu"}, {"type": "dense", "units": 2, "activation": "linear"}]}

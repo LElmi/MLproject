@@ -1,45 +1,157 @@
 import matplotlib.pyplot as plt
-import math
 import numpy as np
+import os
+import time
+from datetime import datetime
 
-def plot_errors(trainer_instance, tempo_di_training: float):
+def _ensure_dir(path="../results/plots"):
+    """Assicura che la cartella di destinazione esista."""
+    if not os.path.exists(path):
+        os.makedirs(path)
+    return path
+
+def _generate_filename(prefix="plot"):
+    """Genera un nome file unico basato sul timestamp."""
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    return f"{prefix}_{timestamp}.png"
+
+def plot_errors_with_validation_error(trainer, training_time: float, save_path="../results/plots"):
     """
-    Riceve l'istanza del trainer e il tempo. 
-    Calcola internamente l'asse delle epoche in base ai dati raccolti.
+    Plot Training vs Validation con naming coerente (tr / vl)
     """
-    
-    # --- 1. Recupero Dati ---
-    mee_data = trainer_instance.mee_error_history
-    mse_data = trainer_instance.mse_error_history
-    
-    # Creiamo l'asse X in base a quanti dati abbiamo effettivamente raccolto
-    # (gestisce automaticamente l'Early Stopping)
-    epoche_reali = np.arange(1, len(mee_data) + 1)
+    dir_path = _ensure_dir(save_path)
 
-    # --- 2. Formattazione del Tempo ---
-    minuti = math.floor(tempo_di_training / 60)
-    secondi = tempo_di_training % 60
-    tempo_str = f"{minuti}m {secondi:.2f}s"
-    
-    # --- 3. Creazione Figura (Subplots) ---
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
-    fig.suptitle(f'Analisi Training (Tempo Totale: {tempo_str})', fontsize=16, fontweight='bold')
+    epochs = np.arange(1, len(trainer.tr_mee_history) + 1)
 
-    # --- Grafico MEE (Mean Euclidean Error) ---
-    ax1.plot(epoche_reali, mee_data, color='#1f77b4', linewidth=2, label='MEE')
-    ax1.set_title('MEE (Accuratezza per la CUP)', fontsize=13)
-    ax1.set_xlabel('Epoca')
-    ax1.set_ylabel('Errore Euclideo Medio')
-    ax1.grid(True, linestyle='--', alpha=0.5)
+    # Valori finali
+    final_tr_mee = trainer.tr_mee_history[-1]
+    final_vl_mee = trainer.vl_mee_history[-1]
+    best_vl_mee = min(trainer.vl_mee_history)
+    best_epoch = np.argmin(trainer.vl_mee_history) + 1
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 7))
+
+    # ---------- GRAFICO 1: MEE ----------
+    ax1.plot(
+        epochs,
+        trainer.tr_mee_history,
+        label=f"MEE_tr (final={final_tr_mee:.4f})",
+        alpha=0.8
+    )
+
+    ax1.plot(
+        epochs,
+        trainer.vl_mee_history,
+        label=f"MEE_vl (best={best_vl_mee:.4f})",
+        linewidth=2
+    )
+
+    ax1.scatter(
+        best_epoch,
+        best_vl_mee,
+        color="red",
+        zorder=5,
+        label=f"Best vl @ ep {best_epoch}"
+    )
+
+    ax1.set_title("Mean Euclidean Error (MEE)")
+    ax1.set_xlabel("Epoch")
+    ax1.set_ylabel("MEE")
+    ax1.grid(True, linestyle="--", alpha=0.4)
     ax1.legend()
 
-    # --- Grafico MSE (Mean Squared Error) ---
-    ax2.plot(epoche_reali, mse_data, color='#d62728', linewidth=2, label='MSE', linestyle='--')
-    ax2.set_title('MSE (Funzione di Costo)', fontsize=13)
-    ax2.set_xlabel('Epoca')
-    ax2.set_ylabel('Errore Quadratico Medio')
-    ax2.grid(True, linestyle='--', alpha=0.5)
+    # ---------- GRAFICO 2: MSE ----------
+    ax2.plot(
+        epochs,
+        trainer.tr_mse_history,
+        label="MSE_tr",
+        alpha=0.8
+    )
+
+    ax2.plot(
+        epochs,
+        trainer.vl_mse_history,
+        label="MSE_vl",
+        linestyle="--",
+        alpha=0.8
+    )
+
+    ax2.set_title("Mean Squared Error (Loss)")
+    ax2.set_xlabel("Epoch")
+    ax2.set_ylabel("MSE (log scale)")
+    ax2.set_yscale("log")
+    ax2.grid(True, linestyle="--", alpha=0.3)
     ax2.legend()
 
-    plt.tight_layout(rect=[0, 0.03, 1, 0.95]) # Lascia spazio per il suptitle
-    plt.show()
+    # ---------- INFO BOX ----------
+    info_text = (
+        f"Final MEE_tr: {final_tr_mee:.5f}\n"
+        f"Final MEE_vl: {final_vl_mee:.5f}\n"
+        f"Best MEE_vl: {best_vl_mee:.5f} (ep {best_epoch})\n"
+        f"Training time: {training_time:.2f}s"
+    )
+
+    fig.text(
+        0.5, 0.02,
+        info_text,
+        ha="center",
+        fontsize=11,
+        bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.3)
+    )
+
+    plt.suptitle(
+        f"Training Analysis ({datetime.now().strftime('%d/%m/%Y')})",
+        fontsize=16,
+        fontweight="bold"
+    )
+
+    plt.tight_layout(rect=[0, 0.06, 1, 0.95])
+
+    fname = _generate_filename("CUP_tr_vs_vl")
+    full_path = os.path.join(dir_path, fname)
+    plt.savefig(full_path, dpi=300)
+    plt.savefig("plot1.png")
+
+    print(f"✅ Grafico salvato in: {full_path}")
+
+
+def plot_errors(trainer, training_time: float, save_path="../results/plots"):
+    """
+    Plot solo training (no validation)
+    """
+    dir_path = _ensure_dir(save_path)
+    epochs = np.arange(1, len(trainer.tr_mee_history) + 1)
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+
+    ax1.plot(
+        epochs,
+        trainer.tr_mee_history,
+        label=f"MEE_tr (final={trainer.tr_mee_history[-1]:.4f})"
+    )
+    ax1.set_title("Training MEE")
+    ax1.set_xlabel("Epoch")
+    ax1.set_ylabel("MEE")
+    ax1.grid(True, alpha=0.3)
+    ax1.legend()
+
+    ax2.plot(
+        epochs,
+        trainer.tr_mse_history,
+        label=f"MSE_tr (final={trainer.tr_mse_history[-1]:.4f})"
+    )
+    ax2.set_title("Training MSE")
+    ax2.set_xlabel("Epoch")
+    ax2.set_ylabel("MSE")
+    ax2.set_yscale("log")
+    ax2.grid(True, alpha=0.3)
+    ax2.legend()
+
+    plt.suptitle(f"Training Profile – time: {training_time:.2f}s")
+    plt.tight_layout()
+
+    fname = _generate_filename("CUP_train_only")
+    plt.savefig(os.path.join(dir_path, fname))
+    plt.savefig("plot2.png")
+
+    print(f"✅ Grafico salvato in: {os.path.join(dir_path, fname)}")

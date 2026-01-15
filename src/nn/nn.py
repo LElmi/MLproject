@@ -1,64 +1,23 @@
 import numpy as np
-from src.training.forward.forward_pass import  forward_all_layers
+from src.training.trainer.forward.forward_pass import  forward_all_layers
 from src.activationf.relu import relu
+from src.activationf.linear import linear
 
 from typing import Callable
 # Tipi utili per chiarezza
 Array2D = np.ndarray
 Array1D = np.ndarray
 
-def add_bias(x: Array2D) -> Array2D:
-    """ 
-    Aggiunge il bias, in testa alla matrice dei pesi, 
-    come vettore di 1 lungo quanti i nodi nel layer di destinazione
-    """
-    # Vettore di 1
-    bias_row = np.ones((1, x.shape[1]))
-
-    return np.concatenate((bias_row, x), axis=0)
-
-"""
-Cose da considerare:
-
-    - tipi dei tensori:
-    Impostare il tipo dei tensori in cui caricare i pesi del modello.
-    float32 → più preciso, più lento, più memoria
-    bfloat16 → meno memoria, più veloce, quasi stessa qualità per i LLM
-
-"""
-
 class NN:
-    """
-    Classe della rete neurale di default feedforward a 2 hidden layers. 
-    In futuro proveremo a renderlo parametrizzabile sugli hidden layers.
-    Input Layer -> Hidden Layer 1 -> Hidden Layer 2 -> Output Layer
-
-    pro:
-        Ogni istanza della classe NN mantiene in memoria i propri valori legati ai vettori risultati
-        e alle matrici dei pesi
-
-    Mantiene in memoria:
-        - Le matrici dei pesi
-        - Vettore risultato x_k
-        - Vettore risultato x_j2
-        - Vettore risultato x_j1
-    """
-
     def __init__(self,
-                 n_inputs: int,
-                 n_hidden1: int,
-                 n_hidden2: int,
-                 n_outputs: int,
-                 f_act: Callable,
-                 learning_rate: float):
+                n_inputs: int,
+                units_list: list[int],
+                n_outputs: int,
+                f_act_hidden: Callable,
+                f_act_output: Callable):
         
         """
         Costruttore della rete neurale 
-        ad ora l'unico input del costruttore obbligatorio è n_inputs.
-        Da aggiungere iperparam:
-            momentum, thikonov, margini inizializzazione dei pesi
-            cose non legate alla backpropagation.
-
         Args:
             n_inputs      : Numero di feature di input
             n_hidden1     : Numero di neuroni nel primo hidden layer
@@ -67,91 +26,38 @@ class NN:
             learning_rate : eta
         """
 
-        self.n_inputs = n_inputs  
-        self.n_hidden1 = n_hidden1
-        self.n_hidden2 = n_hidden2
+        self.n_inputs = n_inputs
+        self.units_list = list(units_list)
         self.n_outputs = n_outputs  
-        self.f_act = f_act          # Legata agli hidden layer
-        self.learning_rate = learning_rate
+        self.f_act_hidden = f_act_hidden  # Per gli hidden layer
+        self.f_act_output = f_act_output
         
-        self.w_j1i = np.random.randn(self.n_inputs, n_hidden1) * np.sqrt(2.0 / n_inputs)
-        self.w_j2j1 = np.random.randn(n_hidden1, n_hidden2) * np.sqrt(2.0 / n_hidden1)
-        self.w_kj2 = np.random.randn(n_hidden2, n_outputs) * np.sqrt(2.0 / n_hidden2)
+        self.weights_matrix_list: list[Array2D] = []
+        # Crea la matrice dei pesi 
+        self._generate_weights_matrix_list()
 
-        self.w_j1i = add_bias(self.w_j1i)
-        self.w_j2j1 = add_bias(self.w_j2j1)
-        self.w_kj2 = add_bias(self.w_kj2)
+        # Crea la matrice di risultati intermedi, all'inizio con valori nulli
+        # + 1 per il vettore risultato output
+        self.layer_results_list: list[Array1D] = [None] * (len(self.units_list) + 1)
 
-        self.x_j1  =  0
-        self.x_j2  =  0
-        self.x_k   =  0
 
-    # Adesso prende come argomento matrici a cui poi applica quello che deve applicare
+    def update_weights(self, delta_list: list[Array2D], eta):
+        """
+        Questa funzione accoppia lista delle matrici dei pesi con la lista dei delta che devono avere la stessa size e fa l'aggiornamento
+        come nella prima versione, l'eta può essere estratto dalla norma dei gradienti diviso l, come nelle slide del prof. Micheli
+        """
 
-    def update_weights(self, delta_wk: Array2D, delta_wj2j1: Array2D, delta_wj1i: Array2D):
+        self.weights_matrix_list = [ w + (eta * d) 
+                        for (w, d) in zip(self.weights_matrix_list, delta_list) 
+        ]
+
+    def forward_network(self, x_pattern: Array1D, fun_act_output: Callable) -> tuple[Array1D, Array1D, Array1D]:
+        """
+        Forward pass su tutta la rete per un **singolo pattern!** passato dalla funzione di train
+        Ad ora la funzione tiene solo in considerazione della funzione di attivazione per gli hidden layer, 
+        usa gli weights nella weights matrix list che viene aggiornata con il metodo update_weights con le
+        informazioni aggiunte dalla backpropagation. Quindi Forward -> Backprop -> Update_Weights
         
-        # ONLINE
-        # --- Aggiornamento Pesi Output (w_kj2) - Versione vettorializzata ---
-        
-        # Prende tutta la riga 0 e viene sommata con il vettore dk moltiplicato per lo scalare lear.rate
-        # Aggiorna il bias
-        #self.w_kj2[0] += self.learning_rate * dk # Versione vettorializzata
-
-        # Il metodo outer restituisce una matrice con shape (self.x_j2, dk), e deve coincidere con
-        #   la matrice che sta aggiornando, in questo caso saltando la riga dei bias precedentemente
-        #   aggiornata.
-        #self.w_kj2[1:, :] += self.learning_rate * np.outer(self.x_j2, dk)
-
-        self.w_kj2 += self.learning_rate * delta_wk
-
-        # --- Aggiornamento Pesi Output (w_kj2) - Versione non vettorializzata ---
-
-        """
-        for kunit in range(self.w_kj2.shape[1]):
-
-            # Aggiorna Bias (Riga 0)
-            self.w_kj2[0][kunit] += self.learning_rate * dk[kunit] 
-
-            for junit in range(self.w_kj2.shape[0] - 1): 
-                print("shape dk: ", dk.shape, "shape x_j2 :", self.x_j2.shape)
-                self.w_kj2[junit + 1, kunit] += self.learning_rate * dk[kunit] * self.x_j2[junit]
-        """ 
-
-        # --- Aggiornamento Pesi Hidden 2 (w_j2j1) - Versione vettorializzata ---
-
-        self.w_j2j1 += self.learning_rate * delta_wj2j1 
- 
-
-        # --- Aggiornamento Pesi Hidden 2 (w_j2j1) - Versione non vettorializzata ---
-        
-        """
-        for j2unit in range(self.w_j2j1.shape[1]):
-            self.w_j2j1[0][j2unit] += self.learning_rate * dj2[j2unit] 
-
-            for j1unit in range(self.w_j2j1.shape[0] - 1):
-                self.w_j2j1[j1unit + 1, j2unit] += self.learning_rate * dj2[j2unit] * self.x_j1[j1unit]
-        """
-
-        # --- Aggiornamento Pesi Hidden 1 (w_j1i) Versione vettorializzata ---
-
-        self.w_j1i += self.learning_rate * delta_wj1i
-
-        # --- Aggiornamento Pesi Hidden 1 (w_j1i) Versione non vettorializzata ---
-
-        """
-        for j1unit in range(self.w_j1i.shape[1]):
-            self.w_j1i[0][j1unit] += self.learning_rate * dj1[j1unit] 
-            
-            for iunit in range(self.w_j1i.shape[0] - 1):
-                self.w_j1i[iunit + 1, j1unit] += self.learning_rate * dj1[j1unit] * x_pattern[iunit]
-
-        """
-
-
-    def forward(self, x_pattern: Array1D) -> tuple[Array1D, Array1D, Array1D]:
-        """
-        Forward pass su tutta la rete per un **singolo pattern!**
-
         Args:
             x_pattern: Vettore di input
         
@@ -160,16 +66,61 @@ class NN:
             x_j2  = Vettore risultato secondo hidden layer
             x_k   = Vettore risultato output layer
         """
+        current_input = x_pattern
+        
+        # Enumerate restituisce una coppia con il primo elemento l'indice e il secondo l'oggetto della lista
+        for i, weights in enumerate(self.weights_matrix_list):
+            
+            # weights[0] è il bias, weights[1:] sono i pesi collegati ad altre unità
+            net = np.dot(current_input, weights[1:]) + weights[0]
+            
+            # Verifica se è all'ultimo layer
+            is_output_layer = (i == len(self.weights_matrix_list) - 1)
 
-        #x_biased = self.add_bias(x_pattern)
+            if is_output_layer:
+                # Per l'output lineare in fondo
+                output = fun_act_output(net)
 
-        self.x_k, self.x_j2, self.x_j1 = forward_all_layers(
-            x_pattern,
-            self.w_j1i,
-            self.w_j2j1,
-            self.w_kj2,
-            self.f_act
-        )
+            else:
+                output = fun_act_output(net)
+            
+            self.layer_results_list[i] = output
+            current_input = output
 
-        return self.x_k, self.x_j2, self.x_j1
+            #print("\n\n\n\vl_layer_results list: ", self.layer_results_list)
 
+        return self.layer_results_list
+
+
+    def _generate_weights_matrix_list(self):
+        """
+        Lavora con self.units_list: una lista di interi corrispondenti al numero di unità,
+        il numero di unità è in base a quanto è lunga questa lista di interi, es:
+            - lista vuota, allora la rete ha 0 hidden layer
+            - lista con un n: int, allora la rete ha un hidden layer grande n
+            - ...
+        Ritorna una lista di matrici di pesi
+        """
+        
+        # Es: Input(10) -> Hidden(32) -> Hidden(16) -> Output(1)
+        # layer_sizes sarà [10, 32, 16, 1]
+        layer_sizes = [self.n_inputs] + self.units_list + [self.n_outputs]
+
+        for i in range(len(layer_sizes) - 1):
+            n_in = layer_sizes[i]
+            n_out = layer_sizes[i+1] 
+
+            weights = np.random.randn(n_in, n_out) * np.sqrt(2.0 / n_in)
+            weights = self._add_bias(weights)
+
+            self.weights_matrix_list.append(weights)
+
+    def _add_bias(self, x: Array2D) -> Array2D:
+        """ 
+        Aggiunge il bias, in testa alla matrice dei pesi, 
+        come vettore di 1 lungo quanti i nodi nel layer di destinazione
+        """
+        # Vettore di 1
+        bias_row = np.ones((1, x.shape[1]))
+
+        return np.concatenate((bias_row, x), axis=0)
