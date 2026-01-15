@@ -17,85 +17,141 @@ def _generate_filename(prefix="plot"):
 
 def plot_errors_with_validation_error(trainer, training_time: float, save_path="../results/plots"):
     """
-    Versione avanzata con Training vs Validation, statistiche finali e salvataggio automatico.
+    Plot Training vs Validation con naming coerente (tr / vl)
     """
     dir_path = _ensure_dir(save_path)
-    epochs = np.arange(1, len(trainer.mee_error_history) + 1)
-    
-    # Recupero i valori finali per i dettagli
-    final_tr_mee = trainer.mee_error_history[-1]
-    final_vl_mee = trainer.mee_vl_error_history[-1]
-    best_vl_mee = min(trainer.mee_vl_error_history)
+
+    epochs = np.arange(1, len(trainer.tr_mee_history) + 1)
+
+    # Valori finali
+    final_tr_mee = trainer.tr_mee_history[-1]
+    final_vl_mee = trainer.vl_mee_history[-1]
+    best_vl_mee = min(trainer.vl_mee_history)
+    best_epoch = np.argmin(trainer.vl_mee_history) + 1
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 7))
-    
-    # --- Grafico 1: MEE (Focus sulla metrica CUP) ---
-    ax1.plot(epochs, trainer.mee_error_history, label=f"Train (Final: {final_tr_mee:.4f})", color='#1f77b4', alpha=0.8)
-    ax1.plot(epochs, trainer.mee_vl_error_history, label=f"Val (Best: {best_vl_mee:.4f})", color='#ff7f0e', linewidth=2)
-    ax1.set_title("Mean Euclidean Error (MEE)", fontsize=14, fontweight='bold')
-    ax1.set_xlabel("Epochs")
-    ax1.set_ylabel("MEE")
-    ax1.grid(True, which='both', linestyle='--', alpha=0.5)
-    ax1.legend(loc='upper right')
-    
-    # Aggiungiamo un'evidenziazione sul punto minimo della validation
-    best_epoch = np.argmin(trainer.mee_vl_error_history) + 1
-    ax1.scatter(best_epoch, best_vl_mee, color='red', zorder=5, label='Best Val')
 
-    # --- Grafico 2: MSE (Focus sulla convergenza) ---
-    ax2.plot(epochs, trainer.mse_error_history, label="MSE Train", color='#2ca02c', alpha=0.7)
-    ax2.plot(epochs, trainer.mse_vl_error_history, label="MSE Validation", color='#d62728', alpha=0.7, linestyle='--')
-    ax2.set_title("Mean Squared Error (Loss)", fontsize=14, fontweight='bold')
-    ax2.set_xlabel("Epochs")
-    ax2.set_yscale('log') # Scala logaritmica spesso migliore per la loss
-    ax2.set_ylabel("MSE (Log Scale)")
-    ax2.grid(True, which='both', linestyle='--', alpha=0.3)
+    # ---------- GRAFICO 1: MEE ----------
+    ax1.plot(
+        epochs,
+        trainer.tr_mee_history,
+        label=f"MEE_tr (final={final_tr_mee:.4f})",
+        alpha=0.8
+    )
+
+    ax1.plot(
+        epochs,
+        trainer.vl_mee_history,
+        label=f"MEE_vl (best={best_vl_mee:.4f})",
+        linewidth=2
+    )
+
+    ax1.scatter(
+        best_epoch,
+        best_vl_mee,
+        color="red",
+        zorder=5,
+        label=f"Best vl @ ep {best_epoch}"
+    )
+
+    ax1.set_title("Mean Euclidean Error (MEE)")
+    ax1.set_xlabel("Epoch")
+    ax1.set_ylabel("MEE")
+    ax1.grid(True, linestyle="--", alpha=0.4)
+    ax1.legend()
+
+    # ---------- GRAFICO 2: MSE ----------
+    ax2.plot(
+        epochs,
+        trainer.tr_mse_history,
+        label="MSE_tr",
+        alpha=0.8
+    )
+
+    ax2.plot(
+        epochs,
+        trainer.vl_mse_history,
+        label="MSE_vl",
+        linestyle="--",
+        alpha=0.8
+    )
+
+    ax2.set_title("Mean Squared Error (Loss)")
+    ax2.set_xlabel("Epoch")
+    ax2.set_ylabel("MSE (log scale)")
+    ax2.set_yscale("log")
+    ax2.grid(True, linestyle="--", alpha=0.3)
     ax2.legend()
 
-    # --- Info Box & Titolo ---
-    info_text = (f"Final Validation MEE: {final_vl_mee:.5f}\n"
-                 f"Best Validation MEE: {best_vl_mee:.5f} (Ep: {best_epoch})\n"
-                 f"Training Time: {training_time:.2f}s")
-    
-    # Inserisce il testo informativo nel grafico
-    fig.text(0.5, 0.02, info_text, ha='center', fontsize=11, 
-             bbox=dict(boxstyle="round", facecolor='wheat', alpha=0.3))
+    # ---------- INFO BOX ----------
+    info_text = (
+        f"Final MEE_tr: {final_tr_mee:.5f}\n"
+        f"Final MEE_vl: {final_vl_mee:.5f}\n"
+        f"Best MEE_vl: {best_vl_mee:.5f} (ep {best_epoch})\n"
+        f"Training time: {training_time:.2f}s"
+    )
 
-    plt.suptitle(f"Neural Network Training Analysis - {datetime.now().strftime('%d/%m/%Y')}", 
-                 fontsize=16, fontweight='bold', y=0.98)
+    fig.text(
+        0.5, 0.02,
+        info_text,
+        ha="center",
+        fontsize=11,
+        bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.3)
+    )
 
-    plt.tight_layout(rect=[0, 0.05, 1, 0.95])
-    
-    # Salvataggio
-    fname = _generate_filename("CUP_validation")
+    plt.suptitle(
+        f"Training Analysis ({datetime.now().strftime('%d/%m/%Y')})",
+        fontsize=16,
+        fontweight="bold"
+    )
+
+    plt.tight_layout(rect=[0, 0.06, 1, 0.95])
+
+    fname = _generate_filename("CUP_tr_vs_vl")
     full_path = os.path.join(dir_path, fname)
     plt.savefig(full_path, dpi=300)
-    print(f"✅ Grafico salvato in: {full_path}")
-    
     plt.savefig("plot1.png")
 
+    print(f"✅ Grafico salvato in: {full_path}")
+
+
 def plot_errors(trainer, training_time: float, save_path="../results/plots"):
-    """Versione per training singolo (senza validation)."""
+    """
+    Plot solo training (no validation)
+    """
     dir_path = _ensure_dir(save_path)
-    epochs = np.arange(1, len(trainer.mee_error_history) + 1)
+    epochs = np.arange(1, len(trainer.tr_mee_history) + 1)
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
 
-    ax1.plot(epochs, trainer.mee_error_history, color='#1f77b4', label=f"Final MEE: {trainer.mee_error_history[-1]:.4f}")
+    ax1.plot(
+        epochs,
+        trainer.tr_mee_history,
+        label=f"MEE_tr (final={trainer.tr_mee_history[-1]:.4f})"
+    )
     ax1.set_title("Training MEE")
-    ax1.set_xlabel("Epochs")
+    ax1.set_xlabel("Epoch")
+    ax1.set_ylabel("MEE")
     ax1.grid(True, alpha=0.3)
     ax1.legend()
 
-    ax2.plot(epochs, trainer.mse_error_history, color='#d62728', label=f"Final MSE: {trainer.mse_error_history[-1]:.4f}")
-    ax2.set_title("Training MSE (Loss)")
-    ax2.set_xlabel("Epochs")
+    ax2.plot(
+        epochs,
+        trainer.tr_mse_history,
+        label=f"MSE_tr (final={trainer.tr_mse_history[-1]:.4f})"
+    )
+    ax2.set_title("Training MSE")
+    ax2.set_xlabel("Epoch")
+    ax2.set_ylabel("MSE")
+    ax2.set_yscale("log")
     ax2.grid(True, alpha=0.3)
     ax2.legend()
 
-    plt.suptitle(f"Training Profile - Execution Time: {training_time:.2f}s")
+    plt.suptitle(f"Training Profile – time: {training_time:.2f}s")
     plt.tight_layout()
-    
+
     fname = _generate_filename("CUP_train_only")
     plt.savefig(os.path.join(dir_path, fname))
     plt.savefig("plot2.png")
+
+    print(f"✅ Grafico salvato in: {os.path.join(dir_path, fname)}")

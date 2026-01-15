@@ -7,7 +7,7 @@ Array2D = np.ndarray
 Array1D = np.ndarray
 
 
-def delta_k(d: Array1D, x_k: Array1D) -> Array1D: 
+def delta_k(d: Array1D, x_k: Array1D, x_prev: Array1D, w_prev: Array2D, f_act: Callable = None) -> Array1D: 
     """
     Funzione che calcola il delta k vettore di un pattern, quindi una componente fondamentale per calcolare la backprop sull'hidden layer
 
@@ -33,13 +33,17 @@ def delta_k(d: Array1D, x_k: Array1D) -> Array1D:
 
     #print(f"-----  dk[kunit] = (d[kunit] - x_k[kunit]) * x_k[kunit]) = {d[kunit]} - {x_k[kunit]} * {x_k[kunit]}")
     """
-    
-    return d - x_k
+
+    if f_act == None: 
+        return d - x_k
+    else: 
+        net_k = np.dot(x_prev, w_prev[1:]) + w_prev[0]
+        return d - x_k * f_act(net_k, True)
 
 
 
 def delta_j(w_ji: Array2D, x_prev: Array1D, w_next: Array2D, 
-            delta_next: Array1D, df_act: Callable) -> Array1D:
+            delta_next: Array1D, f_act: Callable) -> Array1D:
     """
     Funzione che calcola il vettore delta_j corrispondente all'hidden layer
     
@@ -59,8 +63,8 @@ def delta_j(w_ji: Array2D, x_prev: Array1D, w_next: Array2D,
     #dj = np.zeros(n_units)
 
     error_signal = np.dot(w_next[1:, :], delta_next)
-    net_j = np.dot(x_prev, w_ji[1:]) + w_ji[0]    
-    derivative = df_act(net_j, True)
+    net_j = np.dot(x_prev, w_ji[1:]) + w_ji[0]
+    derivative = f_act(net_j, True)
     return error_signal * derivative
 
 """    for unit in range(n_units):
@@ -101,7 +105,8 @@ def compute_delta_all_layers_list(
     layer_results_list: List[Array1D],  # Output di ogni layer dal forward
     weights_matrix_list: List[Array2D], # Pesi attuali
     x_pattern: Array1D,                 # Input originale della rete
-    df_act: Callable,                   # Derivata funzione attivazione
+    f_act_hidden: Callable,                   # Derivata funzione attivazione
+    f_act_output: Callable,
     old_deltas: Optional[List[Array2D]] = None, # Per il momentum
     alpha_momentum: float = 0.0,
     max_norm_gradient_for_clipping: float = 5
@@ -137,13 +142,14 @@ def compute_delta_all_layers_list(
         w_curr = weights_matrix_list[i]
                 
         if i == num_layers - 1: 
-            delta = delta_k(d, curr_output) # (3)
+            delta = delta_k(d, curr_output, prev_output, w_curr, f_act_output) # (3)
+
         else:
             w_next = weights_matrix_list[i + 1]
             delta_next = deltas_list[-1]
             
             #print("w_next: ", w_next, "\n\n\n\n", "delta_next: ", delta_next, "\n\n\n\n")
-            delta = delta_j(w_curr, prev_output, w_next, delta_next, df_act) # (2)
+            delta = delta_j(w_curr, prev_output, w_next, delta_next, f_act_hidden) # (2)
             
         # Salviamo il delta (servirà per il layer precedente nel prossimo giro del ciclo)
         deltas_list.append(delta)

@@ -34,9 +34,9 @@ class GridSearch:
             all_configs.append(comb)
         
         return all_configs
+    
 
-
-    def run(self, x_train, d_train, scouting_epochs):
+    def run(self, x_train, d_train,vl_input, vl_targets):
         """
         Metodo che si chiama dall'esterno, questo è il cuore 
         del grid search, 
@@ -45,17 +45,16 @@ class GridSearch:
             # Qui istanziamo il Trainer usando lo spacchettamento del dizionario **
             trainer = Trainer(
                 input_size=x_train.shape[1],
-                epochs=scouting_epochs,
-                **config_dict
+                **config_dict 
             )
             
             # Per ogni combinazione chiama il fit
-            current_mee = trainer.fit(x_train, d_train)
-            
-            print(f"Config {i+1}/{len(self.combinations)} | MEE: {current_mee:.4f}")
-            
-            if current_mee < self.best_mee:
-                self.best_mee = current_mee
+            current_mee_tr, current_mse_tr, current_mee_vl, current_mse_vl, accuracy = trainer.fit(x_train, d_train, vl_input, vl_targets)
+
+            print(f"Config {i+1}/{len(self.combinations)} | MEE in training: {current_mee_tr:.4f}")
+            print(f"Config {i + 1}/{len(self.combinations)} | MEE in Validation: {current_mee_vl:.4f}")
+            if current_mee_vl < self.best_mee:
+                self.best_mee = current_mee_vl
                 self.best_config = config_dict
         
         return self.best_config, self.best_mee

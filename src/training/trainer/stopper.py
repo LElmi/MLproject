@@ -2,7 +2,7 @@ import numpy as np
 from src.utils import *
 
 
-class handler_stopping():
+class EarlyStopper():
     """
     Mantiene le info per l'early stopping,
     attualmente adesso solo attivabile se la validation è attiva
@@ -12,6 +12,12 @@ class handler_stopping():
 
         - MONK = ACCURACY (da massimizzare, si ferma quando inizia a scendere)
         - CUP = MEE (da minimizzare, si ferma quando inizia a salire)
+    
+    Il costruttore prende come argomenti:
+
+        - patience: massimi comportamenti sbagliati dopo il quale ferma il training,
+            aumentarlo potrebbe migliorare a uscire da un minimo locale
+        - min_delta: l'epsilon, ovvero la tolleranza massima sul
     """
 
     def __init__(self,
@@ -33,20 +39,28 @@ class handler_stopping():
     def __call__(self, current_score, model_weights):
         """
         call praticamente rende l'instanza della classe una funzione chiamabile passando i parametri,
-        molto fico
+        molto fico.
+
+        In generale questo metodo implementa la logica necessaria per capire se il validation error
+        sta migliorando oppure sta peggiorando in base al tipo di metrica utilizzata
+
         """
-            # Logica per minimizzare l'mee
+        # Logica per minimizzare l'mee
         if self.mode == 'min':
+            "Nel caso del min, current_score sarà l'errore sul validation set"
             improved = current_score < (self.best_score - self.min_delta)
+
         # Logica per massimizzare l'accuracy
-        else:
+        elif self.mode == 'max':
+
+            # Se ha classificato correttamente 
             improved = current_score > (self.best_score + self.min_delta)
 
         if improved:
             self.best_score = current_score
             self.counter = 0
 
-            save_model(model_weights) # SALVA IL MODELLO
+            #save_model() # SALVA IL MODELLO
             self.best_weights = model_weights
 
         else:

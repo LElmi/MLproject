@@ -7,7 +7,7 @@ def _normalize_shapes(outputs, targets):
     outputs = np.asarray(outputs)
     #targets = np.asarray(targets)
     #outputs = np.array(outputs)
-    targets = np.array([targets])
+    targets = np.array(targets)
 
     
 

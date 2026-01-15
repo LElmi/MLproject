@@ -1,6 +1,7 @@
 import numpy as np
 from src.training.trainer.forward.forward_pass import  forward_all_layers
 from src.activationf.relu import relu
+from src.activationf.linear import linear
 
 from typing import Callable
 # Tipi utili per chiarezza
@@ -12,7 +13,8 @@ class NN:
                 n_inputs: int,
                 units_list: list[int],
                 n_outputs: int,
-                f_act: Callable):
+                f_act_hidden: Callable,
+                f_act_output: Callable):
         
         """
         Costruttore della rete neurale 
@@ -27,7 +29,8 @@ class NN:
         self.n_inputs = n_inputs
         self.units_list = list(units_list)
         self.n_outputs = n_outputs  
-        self.f_act = f_act  # Per gli hidden layer
+        self.f_act_hidden = f_act_hidden  # Per gli hidden layer
+        self.f_act_output = f_act_output
         
         self.weights_matrix_list: list[Array2D] = []
         # Crea la matrice dei pesi 
@@ -48,10 +51,12 @@ class NN:
                         for (w, d) in zip(self.weights_matrix_list, delta_list) 
         ]
 
-    def forward_network(self, x_pattern: Array1D) -> tuple[Array1D, Array1D, Array1D]:
+    def forward_network(self, x_pattern: Array1D, fun_act_output: Callable) -> tuple[Array1D, Array1D, Array1D]:
         """
         Forward pass su tutta la rete per un **singolo pattern!** passato dalla funzione di train
-        Ad ora la funzione tiene solo in considerazione della funzione di attivazione per gli hidden layer
+        Ad ora la funzione tiene solo in considerazione della funzione di attivazione per gli hidden layer, 
+        usa gli weights nella weights matrix list che viene aggiornata con il metodo update_weights con le
+        informazioni aggiunte dalla backpropagation. Quindi Forward -> Backprop -> Update_Weights
         
         Args:
             x_pattern: Vettore di input
@@ -62,12 +67,10 @@ class NN:
             x_k   = Vettore risultato output layer
         """
         current_input = x_pattern
-
+        
         # Enumerate restituisce una coppia con il primo elemento l'indice e il secondo l'oggetto della lista
         for i, weights in enumerate(self.weights_matrix_list):
             
-            #print("\n\n\n\self.weights_matrix_list: ", self.weights_matrix_list)
-
             # weights[0] è il bias, weights[1:] sono i pesi collegati ad altre unità
             net = np.dot(current_input, weights[1:]) + weights[0]
             
@@ -76,9 +79,10 @@ class NN:
 
             if is_output_layer:
                 # Per l'output lineare in fondo
-                output = net 
+                output = fun_act_output(net)
+
             else:
-                output = self.f_act(net)
+                output = fun_act_output(net)
             
             self.layer_results_list[i] = output
             current_input = output

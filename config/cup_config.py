@@ -1,62 +1,52 @@
-from src.activationf.relu import relu
 from src.activationf.sigmoid import sigmaf
-
-# --------------------  NN config:
+from src.activationf.linear import linear
+from src.activationf.leaky_relu import leaky_relu
 
 # ======== PATHS DATA ========
 PATH_DT = "data/cup/training_data/ML-CUP25-TR.csv"
 
-
-# ======== UNITS SIZE ========
-UNITS_LIST = [8]
+# ======== ARCHITECTURE ========
+UNITS_LIST = [32, 64, 16]  
 N_OUTPUTS = 4
 
-
 # ======= ACTIVATION F =======
-FUN_ACT = relu
+FUN_ACT_HIDDEN = leaky_relu
+FUN_ACT_OUTPUT = linear
 
+# ====== LEARNING RATE =======
+LEARNING_RATE = 0.0005   #<- Funziona in batch ma da applicare il criterio di stop sennò scavalca il minimo
+# Prova: 0.1, 0.05, 0.01 se non converge
 
-# ====== LEARNING RATE ======= #<- viene usato come valore centrale per la grid search
-LEARNING_RATE = 0.00005   #<- Funziona in batch ma da applicare il criterio di stop sennò scavalca il minimo
-#LEARNING_RATE = 0.000025
-# PRIMA IMPLEMENTAZIONE: LINEARE # 
+# ========= DECAY ============
 USE_DECAY = True
 DECAY_FACTOR = 0.99
 DECAY_STEP = 1000
 
-
 # ========= BATCH ============
-BATCH = True
-
-
-# --------------------- STOP CRITERIA:
+BATCH = True  
 
 # ======== N EPOCHS ==========
-EPOCHS = 30000 #usato anche per determinare il numero di epoche per ogni run di grid search, 3% epochs ogni run
-# ======== Early Stopping oon/off =============
-EARLY_STOPPING = False
-# gradient_norm < EPSILON, quindi il gradiente non cresce abbastanza,
-# serve per lo stopping criteria come limite inferiore, in percentuale
-# ======== EPSILON ==========
-#EPSILON = 0.001
+EPOCHS = 15000
+
+# ======== EARLY STOPPING ====
+EARLY_STOPPING = True 
 EPSILON = 0.00005
+PATIENCE = 15
 
-# Dopo quante epoche in cui non cresce il gradiente mi fermo
-# ======= PATIENCE ==========
-PATIENCE = 20
+# ========= MOMENTUM =========
+MOMENTUM = True  
+ALPHA_MOM = 0.5  # ← 0.9 è standard
 
+# ========= VALIDATION =======
+RUN_VALIDATION = True
+RUN_HOLD_OUT_VALIDATION = True
+SPLIT = 20  
 
-# --------------------- MOMENTUM:
+# ======= REGULARIZATION =====
+LAMBDA = 0.0  # ← Disattiva per ora
 
-MOMENTUM = True
-ALPHA_MOM = 0.9 
+# ===== GRADIENT CLIPPING ====
 
+MAX_GRADIENT_NORM = 5  
 
-# --------------------- HOLD OUT VALIDATION (SPLIT = percentuale di pattern tenuti da parte per la validation)
-
-RUN_HOLD_OUT_VALIDATION= True #toggle per runnare la validation in coda al training
-SPLIT = 40
-
-# --------------------- MAX GRADIENT NORM FOR CLIPPING 
-
-MAX_GRADIENT_NORM = 5
+VERBOSE = True

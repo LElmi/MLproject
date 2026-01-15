@@ -24,45 +24,14 @@ def validation_during_training(validation_set, validation_d, w_j1i, w_j2j1, w_kj
 
     return mee, mse , prediction"""
 
-def compute_accuracy(vl_d: float, vl_target: float):
+import numpy as np
+
+def compute_accuracy(vl_o: np.ndarray, vl_d: np.ndarray, threshold: float = 0.5) -> bool:
     """
-    Compute accuracy su un pattern, prende come argomenti:
-
+    Verifica se un singolo pattern è classificato correttamente.
     """
-
-    if isinstance(validation_d, np.floating):
-        prediction = 0
-
-        correctly_classified = 0
-        misclassified = 0
-        
-        if vl_layer_output > 0.50:
-            prediction = 1.0
-        else :
-            prediction = 0.0
-
-        if prediction == validation_d:
-            correctly_classified += 1
-        else:
-            misclassified += 1
-
-
-    else: 
-        prediction = np.zeros(len(validation_d))
+    output_val = float(vl_o[0] if vl_o.ndim > 0 else vl_o)
+    target_val = int(vl_d[0] if vl_d.ndim > 0 else vl_d)
     
-        correctly_classified = 0
-        misclassified = 0
-        for i in range(len(vl_layer_output)):
-
-            if vl_layer_output[i] > 0.50:
-                prediction[i] = 1.0
-            else :
-                prediction[i] = 0.0
-
-            if prediction[i] == validation_d[i]:
-                correctly_classified += 1
-            else:
-                misclassified += 1
-
-
-    return prediction,correctly_classified,misclassified
+    prediction = 1 if output_val >= threshold else 0
+    return prediction == target_val
