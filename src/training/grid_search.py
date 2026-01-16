@@ -4,7 +4,7 @@ class GridSearch:
     """
     Creata per gestire il caso esaustivo e caso intervalli
     """
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: object) -> None:
         # **kwargs contiene tutti gli argomenti passati come lista di liste
 
         self.params_to_explore = kwargs

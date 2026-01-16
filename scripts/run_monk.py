@@ -17,7 +17,6 @@ from config import monk_config
 
 x_i, d = load_monks_data(monk_config.PATH_DT)
 
-
 x_i = x_i.to_numpy().astype(np.float64)
 d = d.to_numpy().astype(np.float64)
 
@@ -39,7 +38,7 @@ gs = GridSearch(
     f_act=[relu, sigmaf, leaky_relu],
     learning_rate = [0.001, 0.01, 0.005],
     use_decay = [True, False],
-    decay_factor = [0.99, 0.95],
+    decay_factor =[0.99, 0.95] ,#if use_decay==True else [0.0],
     decay_step = [100],
     batch = [monk_config.BATCH],
     #epochs=[100],
@@ -52,8 +51,8 @@ gs = GridSearch(
     verbose = [monk_config.VERBOSE],
     validation = [monk_config.RUN_HOLD_OUT_VALIDATION],
 )
-best_config, best_mee = gs.run(tr_input, tr_target,vl_input,vl_targets, scouting_epochs=100)
-print(" 🏆🚀 BEST CONFIG: \n", best_config, "\n\n\n", "BEST MEE: ", best_mee)
+best_config, best_mee = gs.run(tr_input, tr_target,vl_input,vl_targets, scouting_epochs=50)
+
 
 
 
@@ -89,7 +88,7 @@ if monk_config.RUN_K_FOLD:
                         epochs= monk_config.EPOCHS,
                         **best_config)
         if (monk_config.EARLY_STOPPING == True):
-            mee_tr, mse_tr, mee_vl, mse_vl,accuracy = trainer.fit(tr_input, tr_target,
+            mee_tr, mse_tr, mee_vl, mse_vl,accuracy = trainer.fit_K_fold(tr_input, tr_target,validation_fold,
                                                          vl_input, vl_targets)
             mee_arr[validation_fold] = mee_vl
             #print("\n \n \n",accuracy_history)
@@ -100,37 +99,21 @@ if monk_config.RUN_K_FOLD:
                 best_accuracy=accuracy
                 best_model=trainer
         mean_accuracy=np.mean(accuracy_allmodels)
-
+print(" 🏆🚀 BEST CONFIG: \n", best_config, "\n\n\n", "BEST MEE: ", best_mee)
 print("miglior modello trovato tra quelli analizzati con la K fold cross validation con ",monk_config.FOLDS," folds:",best_mee, " con accuracy:",best_accuracy*100.,"%", " e accuracy media:", mean_accuracy*100,"%")
 
 
 
 # Avvia training normale, da aggiustare per farlo andare correttamente se non diamo vl_input e vl_targets alla classe Trainer
 # ha senso runnare il training sul migliore modello trovato tramite la K-fold? chi lo sa
-trainer = Trainer(x_i.shape[1],
-                      monk_config.UNITS_LIST,
-                      monk_config.N_OUTPUTS,
-                      monk_config.FUN_ACT,
-                      monk_config.LEARNING_RATE,
-                      monk_config.USE_DECAY,
-                      monk_config.DECAY_FACTOR,
-                      monk_config.DECAY_STEP,
-                      monk_config.BATCH,
-                      monk_config.EPOCHS,
-                      monk_config.EARLY_STOPPING,
-                      monk_config.EPSILON,
-                      monk_config.PATIENCE,
-                      monk_config.MOMENTUM,
-                      monk_config.ALPHA_MOM,
-                      monk_config.SPLIT,
-                      monk_config.VERBOSE,
-                      monk_config.RUN_HOLD_OUT_VALIDATION)
+
 #mee_tr, mse_tr, mee_vl, mse_vl = trainer.fit(x_i, d)
 
-'''
-PER RUNNARE IL TEST SET
-'''
+
+#PER RUNNARE IL TEST SET
+
 #x_i, d = load_monks_data(monk_config.TEST_PATH_DT)
+
 '''
 if (monk_config.EARLY_STOPPING == True):
     mee_tr, mse_tr, mee_vl, mse_vl =trainer.fit(tr_input, tr_target, 

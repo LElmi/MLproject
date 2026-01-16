@@ -1,7 +1,7 @@
 import numpy as np
 from src.training.trainer.forward.forward_pass import  forward_all_layers
-from src.activationf.relu import relu
-
+from src.activationf.sigmoid import sigmaf
+from config import monk_config
 from typing import Callable
 # Tipi utili per chiarezza
 Array2D = np.ndarray
@@ -72,9 +72,11 @@ class NN:
             # Verifica se è all'ultimo layer
             is_output_layer = (i == len(self.weights_matrix_list) - 1)
 
-            if is_output_layer:
-                # Per l'output lineare in fondo
-                output = net 
+            if is_output_layer & monk_config.MONK==False:
+                # Per l'output lineare in fondo per la cup, output sigmoide per MONK
+                output = net
+            #elif is_output_layer & monk_config.MONK==True:
+            #    output=sigmaf(net)
             else:
                 output = self.f_act(net)
             
@@ -116,3 +118,5 @@ class NN:
         bias_row = np.ones((1, x.shape[1]))
 
         return np.concatenate((bias_row, x), axis=0)
+    def get_weights_matrix_list(self) -> list[Array2D]:
+        return self.weights_matrix_list

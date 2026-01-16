@@ -11,7 +11,7 @@ from src.training.trainer.backward.backprop import compute_delta_all_layers_list
 from src.utils.visualization import *
 from src.utils import save_model as sm
 from src.training.validation.validation_monk import accuracy
-
+from src.utils.save_model import save_model
 
 # Tipi utili per chiarezza
 Array2D = np.ndarray
@@ -79,7 +79,7 @@ class Trainer:
         self.accuracy_history = []
         # self.total_error_array = []
         self.verbose = verbose
-
+        self.plot=False
         self.old_deltas = None # <-- Necessario per il momentum
 
     def fit(self, input_matrix, d_matrix, vl_input = None, vl_targets = None):
@@ -139,7 +139,7 @@ class Trainer:
             print(" Tempo di training: ", time.perf_counter() - start_time)
             print("\n--- Training Completato ---\n")
 
-            if self.validation: 
+            if self.validation and self.plot:
                 plot_errors_with_validation_error(self, time.perf_counter() - start_time)
             else:
                 plot_errors(self, time.perf_counter() - start_time)
@@ -227,7 +227,6 @@ class Trainer:
             self.neuraln.update_weights(avg_deltas, eta = self.learning_rate)
             # Salva per momentum prossima epoca
             if self.momentum: self.old_deltas = avg_deltas
-
         return {
             'mee_tr': epoch_mee / n_patterns,
             'mse_tr': epoch_mse / n_patterns,
@@ -284,3 +283,73 @@ class Trainer:
             'mse_vl': epoch_mse_vl,
             'accuracy':correctly_classified/ (correctly_classified+ misclassified)
         }
+
+    def fit_K_fold(self, input_matrix, d_matrix, fold, vl_input=None, vl_targets=None):
+        """
+        Metodo centrale della classe Train. Fa le seguenti cose:
+            - Prende come argomenti:
+                . Tutti i pattern dei valori in ingresso CUP (500, 14)
+                . Tutti i corrispondenti pattern dei valori risultati CUP (500, 4)
+
+            - Itera le epoche al cui interno si itera sui pattern, per ogni epoca:
+                . Avvia il timer
+                . Chiama il metodo interno run epoch che restituisce i risultati sull'errore corrente
+                . Controlla se il criterio di fermata è soddisfatto, se sì ferma l'iterazione
+        """
+
+        n_patterns = input_matrix.shape[0]
+        gradient_misbehave = 0
+        prev_gradient_norm = None
+
+        start_time = time.perf_counter()
+
+        if self.verbose:
+            print(f"Inizio training (Early stopping: {self.early_stopping})...")
+
+        for epoch in range(1, self.epochs + 1):
+            # print("\n\n\n\n\nsize_x: ", input_matrix.shape, "\n\n\n\n\n", "size_d: ", d_matrix.shape)
+            epoch_results = self._run_epoch(input_matrix, d_matrix, n_patterns, epoch)
+
+            self.mee_error_history.append(epoch_results["mee_tr"])
+            self.mse_error_history.append(epoch_results["mse_tr"])
+
+            if self.validation and vl_input is not None:
+                epoch_vl_results = self._run_epoch_validation(vl_input, vl_targets)
+
+                self.mee_vl_error_history.append(epoch_vl_results["mee_vl"])
+                self.mse_vl_error_history.append(epoch_vl_results["mse_vl"])
+
+                if "accuracy" in epoch_vl_results:
+                    self.accuracy_history.append(epoch_vl_results["accuracy"])
+
+            if self.verbose and epoch % 10 == 0:
+                print("|| epoch n° ", epoch, ", total mee error: ", epoch_results["mee_tr"], " ||")
+
+            if self.early_stopping:
+                prev_gradient_norm, gradient_misbehave = self._check_patience(
+                    gradient_misbehave, prev_gradient_norm, epoch_results["grad_norm"], n_patterns
+                )
+                if gradient_misbehave >= self.patience:
+                    break
+
+            #-----------------------------------------------------------------------------------------------------------
+            if epoch == self.epochs:
+                print("last epochs saving model...\n\n")
+                save_model(self,self.neuraln.get_weights_matrix_list(), self.neuraln.units_list, self.f_act, fold)
+            # -----------------------------------------------------------------------------------------------------------
+        if self.verbose:
+            print(" Total mee error: ", epoch_results["mee_tr"])
+            print(" Total mse error: ", epoch_results["mse_tr"])
+            print(" Tempo di training: ", time.perf_counter() - start_time)
+            print("\n--- Training Completato ---\n")
+
+            if self.validation and self.plot:
+                plot_errors_with_validation_error(self, time.perf_counter() - start_time)
+            else:
+                plot_errors(self, time.perf_counter() - start_time)
+
+        return (self.mee_error_history[-1], self.mse_error_history[-1],
+                self.mee_vl_error_history[-1] if self.validation else 0.0,
+                self.mse_vl_error_history[-1] if self.validation else 0.0,
+                self.accuracy_history[-1] if "accuracy" in epoch_vl_results else 0.0
+                )

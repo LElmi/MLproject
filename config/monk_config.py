@@ -5,12 +5,12 @@ from src.activationf.leaky_relu import leaky_relu
 
 # ======== PATHS DATA ========
 #PATH_DT = "../data/training_data/ML-CUP25-TR.csv"  #<- CUP
-PATH_DT = "../data/training_data/monks-3.train"
+PATH_DT = "../data/training_data/monks-1.train"
 TEST_PATH_DT = "../data/training_data/monks-1.test"
 MONK= True #<- toggle per il monk
 
 # ======== UNITS SIZE ========
-UNITS_LIST = [8,4]
+UNITS_LIST = [8]
 N_OUTPUTS = 1
 
 
@@ -60,7 +60,7 @@ ALPHA_MOM = 0.5 #<- viene usato come valore centrale per la grid search
 RUN_HOLD_OUT_VALIDATION= True #toggle per runnare la validation in coda al training
 SPLIT = 30
 RUN_K_FOLD=True
-FOLDS=10
+FOLDS=3
 #------------------ Regolarizzazione
 LAMBDA=0.01
 

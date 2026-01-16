@@ -34,7 +34,7 @@ def delta_k(d: Array1D, x_k: Array1D) -> Array1D:
     #print(f"-----  dk[kunit] = (d[kunit] - x_k[kunit]) * x_k[kunit]) = {d[kunit]} - {x_k[kunit]} * {x_k[kunit]}")
     """
     
-    return d - x_k
+    return -(x_k - d)#*x_k * (1 - x_k)
 
 
 
