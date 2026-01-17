@@ -48,27 +48,26 @@ gs = GridSearch(
 )
 """
 gs = GridSearch(
-    units_list=[
-        [4, 4], [4, 4, 4], [8, 4]],
+    units_list=[[32,16]],
     n_outputs=[monk_config.N_OUTPUTS],
     f_act_hidden=[leaky_relu],
     f_act_output=[sigmaf],
-    learning_rate=[0.05],
+    learning_rate=[0.1],
     use_decay=[True],
     decay_factor=[0.99],
     decay_step=[100],
     batch=[monk_config.BATCH],
     epochs=[50],
-    early_stopping=[True],
-    epsilon=[ 1e-3 ,1e-4],
+    early_stopping=[False],
+    epsilon=[1e-9],
     patience=[10],
     momentum=[True],
-    alpha_mom=[0.0,0.5,0.9],
+    alpha_mom=[0.5,0.9],
     max_gradient_norm=[1.0],
-    split=[20],  # train-validation split %
+    split=[monk_config.SPLIT],
     verbose=[True],
     validation=[True],
-    lambdal2=[0.0, 0.0001]
+    lambdal2=[0.001]
 )
 
 best_config, best_accuracy_GS = gs.run_for_monk(tr_input, tr_target, vl_input, vl_target, compute_accuracy)

@@ -355,11 +355,7 @@ class Trainer:
         
         for pattern in range(n_patterns):
 
-            if metric_fn == compute_accuracy:
-
-                vl_layer_results = self.neuraln.forward_network(vl_x[pattern],self.f_act_hidden, sigmaf)
-            else : 
-                vl_layer_results = self.neuraln.forward_network(vl_x[pattern],self.f_act_hidden,linear)
+            vl_layer_results = self.neuraln.forward_network(vl_x[pattern],self.f_act_hidden, sigmaf)
 
             vl_final_output = vl_layer_results[-1]
 
