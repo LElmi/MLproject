@@ -107,9 +107,12 @@ class NN:
 
         for i in range(len(layer_sizes) - 1):
             n_in = layer_sizes[i]
-            n_out = layer_sizes[i+1] 
+            n_out = layer_sizes[i+1]
 
-            weights = np.random.randn(n_in, n_out) * np.sqrt(2.0 / n_in)
+            if i == len(layer_sizes) - 2:  # output layer pesi più piccoli, dovrebbe aiutare la sigmoide
+                weights = np.random.randn(n_in, n_out)* np.sqrt(2.0 / n_in) * 0.01
+            else:
+                weights = np.random.randn(n_in, n_out)
             weights = self._add_bias(weights)
 
             self.weights_matrix_list.append(weights)

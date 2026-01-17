@@ -277,8 +277,8 @@ class Trainer:
         """
 
         indices = np.arange(n_patterns)
-        if not self.batch: np.random.shuffle(indices)
-
+        #if not self.batch: np.random.shuffle(indices)
+        np.random.shuffle(indices)
         epoch_mee, epoch_mse, epoch_grad = 0.0, 0.0, 0.0
 
         # Crea una lista di batch quindi batch_deltas = [ [dwk], [dwj2], [dwj1]], 
@@ -383,7 +383,9 @@ class Trainer:
             vl_score = epoch_mse_vl
         
         if self.verbose:
-            print(f"|||| CLASSIFICATION ACCURACY: {accuracy_vl:.4f} ({correct_predictions}/{n_patterns})")
+
+            rounded_numbers = [round(num,1) for num in np.asarray(vl_final_output_array).flatten()]
+            print(f"|||| CLASSIFICATION ACCURACY: {accuracy_vl:.4f} ({correct_predictions}/{n_patterns})","\noutput modello: ",np.asarray(rounded_numbers).flatten(),"\ntargets: ",np.asarray(vl_d).flatten())
         
         return {
             'vl_score': vl_score,

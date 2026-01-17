@@ -3,6 +3,7 @@ from src.training.trainer.trainer import Trainer
 from src.training.grid_search import GridSearch
 import numpy as np
 from src.training.validation.hold_out import hold_out_validation
+from src.training.validation.Stratified_Split import hold_out_validation_stratified
 from src.activationf.leaky_relu import leaky_relu
 from src.activationf.relu import relu
 from src.activationf.sigmoid import sigmaf
@@ -15,63 +16,61 @@ from src.training.validation.k_fold import k_fold
 x_i, d = load_monks_data(monk_config.PATH_DT)
 x_i = x_i.to_numpy().astype(np.float64)
 d = d.to_numpy().astype(np.float64)
-x_i, x_min, x_max = normalize_data(x_i)
 
-
+x_i = x_i.astype(float)
+x_i = (x_i - x_i.mean(axis=0)) / (x_i.std(axis=0) + 1e-8)
 if monk_config.RUN_HOLD_OUT_VALIDATION:
 
-    tr_input, tr_target, vl_input, vl_target = hold_out_validation(x_i, d, monk_config.SPLIT)
-
-
-# GridSearch è una classe che usa **kwargs come argomento, ergo, 
-# non ha limiti di argomenti e combinazioni, 
-# al suo interno usa la classe TRAIN! Da tenere in considerazione se si
-# apportano modifiche lì!
-"""gs = GridSearch(
-    units_list = [[32, 16], [64, 64], [128, 64, 32]], 
-    learning_rate = [0.001, 0.01],
-    f_act = [relu, sigmaf],
-    use_decay = [True, False],
-    decay_factor = [0.99, 0.95],
-    decay_step = [100],
-    n_outputs = [4], 
-    batch = [True],
-    early_stopping = [True],mee
-    epsilon = [1e-5],
-    patience = [20],
-    momentum = [True],
-    alpha_mom = [0.9],
-    split = [0.2]
-)
-
-best_config, best_mee = gs.run(tr_input, tr_target, scouting_epochs=100)
-print(" 🏆🚀 BEST CONFIG: \n", best_config, "\n\n\n", "BEST MEE: ", best_mee)
+    tr_input, tr_target, vl_input, vl_target = hold_out_validation_stratified(x_i, d, monk_config.SPLIT)
 """
-
-
 gs = GridSearch(
-    units_list=[[16,8], [8, 4]],
+    units_list=[[4,4,4],[16,8], [8, 4]],
     n_outputs = [monk_config.N_OUTPUTS],
     f_act_hidden = [leaky_relu],
     f_act_output = [sigmaf],
-    learning_rate = [0.005],
-    use_decay = [True],
+    learning_rate = [0.02],
+    use_decay = [False],
     decay_factor =[0.90] ,#if use_decay==True else [0.0],
-    decay_step = [10],
+    decay_step = [100],
     batch = [monk_config.BATCH],
-    epochs=[200],
-    early_stopping = [False],
-    epsilon = [monk_config.EPSILON],
+    epochs=[50],
+    early_stopping = [True],
+    epsilon = [1e-4],
     patience = [monk_config.PATIENCE],
-    momentum = [monk_config.MOMENTUM],
-    alpha_mom = [[0.9]],
-    max_gradient_norm = [20],
-    split = [monk_config.SPLIT],
+    momentum = [True],
+    alpha_mom = [[0.1]],
+    max_gradient_norm = [1.0],
+    split = [50],
     verbose = [True],
     validation = [True],
-    lambdal2 = [1e-5, 1e-4, 1e-3]
+    lambdal2 = [0.0]
 
 )
+"""
+gs = GridSearch(
+    units_list=[
+        [4, 4], [4, 4, 4], [8, 4]],
+    n_outputs=[monk_config.N_OUTPUTS],
+    f_act_hidden=[leaky_relu],
+    f_act_output=[sigmaf],
+    learning_rate=[0.05],
+    use_decay=[True],
+    decay_factor=[0.99],
+    decay_step=[100],
+    batch=[monk_config.BATCH],
+    epochs=[50],
+    early_stopping=[True],
+    epsilon=[ 1e-3 ,1e-4],
+    patience=[10],
+    momentum=[True],
+    alpha_mom=[0.0,0.5,0.9],
+    max_gradient_norm=[1.0],
+    split=[20],  # train-validation split %
+    verbose=[True],
+    validation=[True],
+    lambdal2=[0.0, 0.0001]
+)
+
 best_config, best_accuracy_GS = gs.run_for_monk(tr_input, tr_target, vl_input, vl_target, compute_accuracy)
 
 number_of_patterns_in_one_fold=round(x_i.shape[0]/monk_config.FOLDS)

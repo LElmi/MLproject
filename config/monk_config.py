@@ -2,7 +2,7 @@ from src.activationf.sigmoid import sigmaf
 from src.activationf.leaky_relu import leaky_relu
 
 # ======== PATHS DATA ========
-PATH_DT = "../data/monk/train_data/monks-1.train"
+PATH_DT = "../data/monk/train_data/monks-3.train"
 MONK = True
 
 # ======== ARCHITECTURE ========
@@ -52,4 +52,4 @@ MAX_GRADIENT_NORM = 10.0
 VERBOSE = True
 
 # ===== K-FOLD ====
-FOLDS = 10
+FOLDS = 5
