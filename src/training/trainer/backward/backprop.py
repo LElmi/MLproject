@@ -1,7 +1,7 @@
 import numpy as np
 import math as math
 from typing import Callable, List, Optional
-
+from src.activationf.linear import linear
 
 Array2D = np.ndarray
 Array1D = np.ndarray
@@ -33,12 +33,15 @@ def delta_k(d: Array1D, x_k: Array1D, x_prev: Array1D, w_prev: Array2D, f_act: C
 
     #print(f"-----  dk[kunit] = (d[kunit] - x_k[kunit]) * x_k[kunit]) = {d[kunit]} - {x_k[kunit]} * {x_k[kunit]}")
     """
+    prova=True #per usare binary cross entropy loss
+    if f_act == None or linear:
+        return -(x_k-d) #output function lineare con una qualunque loss
 
-    if f_act == None: 
-        return d - x_k
+    elif prova==True:
+        return x_k-d #output function sigmoide con loss=Binary cross entropy
     else: 
         net_k = np.dot(x_prev, w_prev[1:]) + w_prev[0]
-        return d - x_k * f_act(net_k, True)
+        return d - x_k * f_act(net_k, True) #output function sigmoide con loss=MSE
 
 
 

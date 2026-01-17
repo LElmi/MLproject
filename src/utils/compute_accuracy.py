@@ -32,6 +32,6 @@ def compute_accuracy(vl_o: np.ndarray, vl_d: np.ndarray, threshold: float = 0.5)
     """
     output_val = float(vl_o[0] if vl_o.ndim > 0 else vl_o)
     target_val = int(vl_d[0] if vl_d.ndim > 0 else vl_d)
-    
+
     prediction = 1 if output_val >= threshold else 0
     return prediction == target_val

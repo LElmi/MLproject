@@ -40,18 +40,18 @@ class NN:
         # + 1 per il vettore risultato output
         self.layer_results_list: list[Array1D] = [None] * (len(self.units_list) + 1)
 
-
-    def update_weights(self, delta_list: list[Array2D], eta):
+    def update_weights(self, delta_list: list[Array2D], eta, lambda_l2=1e-4):
         """
-        Questa funzione accoppia lista delle matrici dei pesi con la lista dei delta che devono avere la stessa size e fa l'aggiornamento
-        come nella prima versione, l'eta può essere estratto dalla norma dei gradienti diviso l, come nelle slide del prof. Micheli
-        """
+        Aggiorna i pesi con gradiente + regolarizzazione L2.
 
-        self.weights_matrix_list = [ w + (eta * d) 
-                        for (w, d) in zip(self.weights_matrix_list, delta_list) 
+        lambda_l2: coefficiente di regolarizzazione (>= 0).
+        """
+        self.weights_matrix_list = [
+            (w + eta * d) - eta * lambda_l2 * w
+            for (w, d) in zip(self.weights_matrix_list, delta_list)
         ]
 
-    def forward_network(self, x_pattern: Array1D, fun_act_output: Callable) -> tuple[Array1D, Array1D, Array1D]:
+    def forward_network(self, x_pattern: Array1D, fun_act_hidden: Callable,fun_act_output: Callable) -> tuple[Array1D, Array1D, Array1D]:
         """
         Forward pass su tutta la rete per un **singolo pattern!** passato dalla funzione di train
         Ad ora la funzione tiene solo in considerazione della funzione di attivazione per gli hidden layer, 
@@ -78,11 +78,10 @@ class NN:
             is_output_layer = (i == len(self.weights_matrix_list) - 1)
 
             if is_output_layer:
-                # Per l'output lineare in fondo
                 output = fun_act_output(net)
 
             else:
-                output = fun_act_output(net)
+                output = fun_act_hidden(net)
             
             self.layer_results_list[i] = output
             current_input = output

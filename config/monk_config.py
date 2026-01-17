@@ -2,7 +2,7 @@ from src.activationf.sigmoid import sigmaf
 from src.activationf.leaky_relu import leaky_relu
 
 # ======== PATHS DATA ========
-PATH_DT = "data/monk/train_data/monks-1.train"
+PATH_DT = "../data/monk/train_data/monks-1.train"
 MONK = True
 
 # ======== ARCHITECTURE ========
@@ -30,7 +30,7 @@ EPOCHS = 1000
 
 # ======== EARLY STOPPING ====
 EARLY_STOPPING = True 
-EPSILON = 0.1  # Più tollerante per MSE
+EPSILON = 0.000000000000001  # Più tollerante per MSE
 PATIENCE = 15
 
 # ========= MOMENTUM =========
@@ -40,7 +40,7 @@ ALPHA_MOM = 0.9  # ← 0.9 è standard
 # ========= VALIDATION =======
 RUN_VALIDATION = True
 RUN_HOLD_OUT_VALIDATION = True
-SPLIT = 20  
+SPLIT = 10
 
 # ======= REGULARIZATION =====
 LAMBDA = 0.0  # ← Disattiva per ora, MONK è semplice
@@ -52,4 +52,4 @@ MAX_GRADIENT_NORM = 10.0
 VERBOSE = True
 
 # ===== K-FOLD ====
-FOLDS = 5
+FOLDS = 10
