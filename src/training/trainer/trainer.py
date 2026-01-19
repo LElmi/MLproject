@@ -252,7 +252,8 @@ class Trainer:
             print(" Tempo di fitting: ", time.perf_counter() - start_time)
             print("\n--- Fitting Completato ---\n")
 
-            if self.validation: 
+            if self.validation:
+                print(" plottando....")
                 plot_errors_with_validation_error(self, time.perf_counter() - start_time)
             else:
                 plot_errors(self, time.perf_counter() - start_time)
