@@ -1,44 +1,31 @@
 import numpy as np
-from src.training.trainer.forward.forward_pass import  forward_all_layers
-from src.activationf.relu import relu
-from src.activationf.linear import linear
-
 from typing import Callable
-# Tipi utili per chiarezza
+
 Array2D = np.ndarray
 Array1D = np.ndarray
 
+
 class NN:
     def __init__(self,
-                n_inputs: int,
-                units_list: list[int],
-                n_outputs: int,
-                f_act_hidden: Callable,
-                f_act_output: Callable):
-        
-        """
-        Costruttore della rete neurale 
-        Args:
-            n_inputs      : Numero di feature di input
-            n_hidden1     : Numero di neuroni nel primo hidden layer
-            n_hidden      : Numero di neuroni nel secondo hidden layer
-            n_outputs     : Numero di neuroni nell'output layer
-            learning_rate : eta
-        """
+                 n_inputs: int,
+                 units_list: list[int],
+                 n_outputs: int,
+                 f_act_hidden: Callable,
+                 f_act_output: Callable):
 
         self.n_inputs = n_inputs
         self.units_list = list(units_list)
-        self.n_outputs = n_outputs  
-        self.f_act_hidden = f_act_hidden  # Per gli hidden layer
+        self.n_outputs = n_outputs
+        self.f_act_hidden = f_act_hidden
         self.f_act_output = f_act_output
-        
+
         self.weights_matrix_list: list[Array2D] = []
-        # Crea la matrice dei pesi 
         self._generate_weights_matrix_list()
 
-        # Crea la matrice di risultati intermedi, all'inizio con valori nulli
-        # + 1 per il vettore risultato output
-        self.layer_results_list: list[Array1D] = [None] * (len(self.units_list) + 1)
+        # MODIFICA: Salviamo sia gli output che i net (pre-attivazione)
+        num_layers = len(self.units_list) + 1
+        self.layer_results_list: list[Array1D] = [None] * num_layers
+        self.layer_net_list: list[Array1D] = [None] * num_layers  # ← NUOVO!
 
     def update_weights(self, delta_list: list[Array2D], eta, lambda_l2=1e-4):
         """
@@ -46,50 +33,48 @@ class NN:
 
         lambda_l2: coefficiente di regolarizzazione (>= 0).
         """
+
         self.weights_matrix_list = [
             (w + eta * d) - eta * lambda_l2 * w
             for (w, d) in zip(self.weights_matrix_list, delta_list)
         ]
 
-    def forward_network(self, x_pattern: Array1D, fun_act_hidden: Callable,fun_act_output: Callable) -> tuple[Array1D, Array1D, Array1D]:
+    def forward_network(self, x_pattern: Array1D, fun_act_hidden: Callable,
+                        fun_act_output: Callable) -> tuple[list[Array1D], list[Array1D]]:
         """
-        Forward pass su tutta la rete per un **singolo pattern!** passato dalla funzione di train
-        Ad ora la funzione tiene solo in considerazione della funzione di attivazione per gli hidden layer, 
-        usa gli weights nella weights matrix list che viene aggiornata con il metodo update_weights con le
-        informazioni aggiunte dalla backpropagation. Quindi Forward -> Backprop -> Update_Weights
-        
-        Args:
-            x_pattern: Vettore di input
-        
+        Forward pass che salva sia output che net values.
+
         Returns:
-            x_j1  = Vettore risultato primo hidden layer
-            x_j2  = Vettore risultato secondo hidden layer
-            x_k   = Vettore risultato output layer
+            tuple: (layer_results_list, layer_net_list)
+                - layer_results_list: output dopo attivazione per ogni layer
+                - layer_net_list: net input (prima attivazione) per ogni layer
         """
         current_input = x_pattern
-        
-        # Enumerate restituisce una coppia con il primo elemento l'indice e il secondo l'oggetto della lista
+
         for i, weights in enumerate(self.weights_matrix_list):
-            
-            # weights[0] è il bias, weights[1:] sono i pesi collegati ad altre unità
+            # Calcola il net, e qui l'unica volta che lo calcola
+            # net è un vettore dei net di quello strato
             net = np.dot(current_input, weights[1:]) + weights[0]
-            
-            # Verifica se è all'ultimo layer
+
+            # Salvo il net che viene aggiunto alla lista
+            # per layer, quindi il net è unificato per tutto lo strato,
+            # non più il net che viene calcolato da capo per ogni unità
+            self.layer_net_list[i] = net
+
+            # Controlla se è l'ultimo layer
             is_output_layer = (i == len(self.weights_matrix_list) - 1)
 
             if is_output_layer:
                 output = fun_act_output(net)
-
             else:
                 output = fun_act_hidden(net)
-            
+
+            # Salva l'output (post-attivazione)
             self.layer_results_list[i] = output
             current_input = output
 
-            #print("\n\n\n\vl_layer_results list: ", self.layer_results_list)
-
-        return self.layer_results_list
-
+        # Ritorna le liste
+        return self.layer_results_list, self.layer_net_list
 
     def _generate_weights_matrix_list(self):
         """
@@ -100,31 +85,28 @@ class NN:
             - ...
         Ritorna una lista di matrici di pesi
         """
-        
-        # Es: Input(10) -> Hidden(32) -> Hidden(16) -> Output(1)
-        # layer_sizes sarà [10, 32, 16, 1]
+
         layer_sizes = [self.n_inputs] + self.units_list + [self.n_outputs]
 
         for i in range(len(layer_sizes) - 1):
             n_in = layer_sizes[i]
-            n_out = layer_sizes[i+1]
+            n_out = layer_sizes[i + 1]
 
-            if i == len(layer_sizes) - 2:  # output layer pesi più piccoli, dovrebbe aiutare la sigmoide
-                weights = np.random.randn(n_in, n_out)* np.sqrt(2.0 / n_in)*0.01
-            else:
-                weights = np.random.randn(n_in, n_out)* np.sqrt(2.0 / n_in)*0.01
+            # Buono per SIGMOIDE
+            limit = np.sqrt(6 / (n_in + n_out))
+            weights = np.random.uniform(-limit, limit, (n_in, n_out))
             weights = self._add_bias(weights)
 
-
+            #  Buono per ReLu
+            # weights = np.random.randn(n_in, n_out)* np.sqrt(2.0 / n_in)*0.01
 
             self.weights_matrix_list.append(weights)
 
     def _add_bias(self, x: Array2D) -> Array2D:
-        """ 
-        Aggiunge il bias, in testa alla matrice dei pesi, 
+        """
+        Aggiunge il bias, in testa alla matrice dei pesi,
         come vettore di 1 lungo quanti i nodi nel layer di destinazione
         """
-        # Vettore di 1
-        bias_row = np.ones((1, x.shape[1]))
 
+        bias_row = np.ones((1, x.shape[1]))
         return np.concatenate((bias_row, x), axis=0)
