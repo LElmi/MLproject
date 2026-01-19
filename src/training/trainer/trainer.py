@@ -175,8 +175,8 @@ class Trainer:
         return (self.tr_mee_history[-1], 
                         self.tr_mse_history[-1], 
                         self.vl_mee_history[-1] if self.validation else 0.0,
-                        self.vl_mse_history[-1] if self.validation else 0.0,
-                        final_vl_accuracy)
+                        self.vl_mse_history[-1] if self.validation else 0.0,)
+                        #final_vl_accuracy)
     
 
     def fit_k_fold(self, 
