@@ -12,6 +12,7 @@ from src.utils.compute_accuracy import compute_accuracy
 # from src.training.trainer.stopper import Stopper
 from src.activationf.sigmoid import sigmaf
 from src.activationf.linear import linear
+#from src.utils.visualization import plot_accuracy
 # Tipi utili per chiarezza
 Array2D = np.ndarray
 Array1D = np.ndarray
@@ -46,7 +47,8 @@ class Trainer:
                  max_gradient_norm: float,
                  split: float,
                  verbose: bool = False,      # <- Importante da togliere nella grid search
-                 validation: bool = False):  # <- Importante da togliere nella grid search
+                 validation: bool = False,
+                 lambdal2: float =1e-4):  # <- Importante da togliere nella grid search
 
 
         self.f_act_hidden = f_act_hidden
@@ -65,7 +67,7 @@ class Trainer:
         self.max_gradient_norm = max_gradient_norm
         self.verbose = verbose
         self.validation = validation
-
+        self.lambdal2=lambdal2
         self.epoch = 0
         self.old_deltas = None
 
@@ -137,7 +139,10 @@ class Trainer:
                 
                 # Al suo interno viene presa la media del risultato
                 # su tutti i pattern
-                vl_epoch_results = self._run_epoch_vl(vl_x, vl_d, metric_fn)
+                if metric_fn is compute_accuracy:
+                    vl_epoch_results = self._run_epoch_vl(vl_x, vl_d, metric_fn)
+                else:
+                    vl_epoch_results = self._run_epoch_vl_CUP(vl_x, vl_d, metric_fn)
 
                 self.vl_mee_history.append(vl_epoch_results["mee_vl"])
                 self.vl_mse_history.append(vl_epoch_results["mse_vl"])
@@ -154,7 +159,7 @@ class Trainer:
                     
 
             if self.verbose and epoch % 10 == 0:
-                print("|| epooch n° ", epoch, ", total mee error: ", tr_epoch_results["mee_tr"], " ||")
+                print("|| epooch n° ", epoch, ", total mee error with training patterns: ", tr_epoch_results["mee_tr"], " ||")
 
         if self.verbose: 
             print(" Final mee error: ", tr_epoch_results["mee_tr"])
@@ -171,13 +176,13 @@ class Trainer:
                         self.tr_mse_history[-1], 
                         self.vl_mee_history[-1] if self.validation else 0.0,
                         self.vl_mse_history[-1] if self.validation else 0.0,
-                        final_vl_accuracy)
+                        final_vl_accuracy if self.validation else 0.0)
     
 
     def fit_k_fold(self, 
                    input_matrix: np.ndarray, 
                    d_matrix: np.ndarray, 
-                   fold: int, 
+                   fold: int,
                    vl_input: np.ndarray = None, 
                    vl_targets: np.ndarray = None,
                    metric_fn: Callable = None,      # Aggiunto per gestire Accuracy
@@ -210,8 +215,10 @@ class Trainer:
             # Gestione Validation
             if self.validation and vl_input is not None:
                 # Passiamo metric_fn per calcolare accuracy se serve
-                epoch_vl_results = self._run_epoch_vl(vl_input, vl_targets, metric_fn)
-
+                if metric_fn is compute_accuracy:
+                    epoch_vl_results = self._run_epoch_vl(vl_input, vl_targets, metric_fn)
+                else:
+                    epoch_vl_results = self._run_epoch_vl_CUP(vl_input, vl_targets, metric_fn)
                 self.vl_mee_history.append(epoch_vl_results["mee_vl"])
                 self.vl_mse_history.append(epoch_vl_results["mse_vl"])
                 
@@ -233,6 +240,8 @@ class Trainer:
 
             if self.verbose and epoch % 10 == 0:
                 print(f"|| Fold {fold} | Epoch {epoch} | TR MEE: {epoch_results['mee_tr']:.4f} ||")
+            if (epoch==self.epochs):
+                print("\n\n\n\nFine Training all'epoca:", epoch)
 
         # Salvataggio modello a fine training (o se early stopping attivato)
         # Nota: save_model deve essere importata da src.utils
@@ -241,7 +250,13 @@ class Trainer:
 
         if self.verbose:
             print(f"\n--- Training Fold {fold} Completato in {time.perf_counter() - start_time:.2f}s ---\n")
+        if self.validation and self.validation:
+            plot_errors_with_validation_error(self, time.perf_counter() - start_time)
 
+        elif self.validation and metric_fn==compute_accuracy:
+            plot_accuracy(self, time.perf_counter() - start_time)
+        else:
+            plot_errors(self, time.perf_counter() - start_time)
         # RETURN STANDARD A 5 VALORI (Come fit)
         return (self.tr_mee_history[-1], 
                 self.tr_mse_history[-1],
@@ -270,33 +285,39 @@ class Trainer:
         # in base a quanti sono le matrici dentro la lista dei pesi
         if self.batch: 
             batch_deltas = [np.zeros_like(w) for w in self.neuraln.weights_matrix_list]
-
+        final_output=[]
         # Scorre tutti gli indici dividendo il comportamento in base a se è batch oppure online
         for idx in indices:
 
             x_pattern, d_pattern = input_matrix[idx], d_matrix[idx]
 
-            layer_results = self.neuraln.forward_network(x_pattern, self.f_act_output)
-            final_output = layer_results[-1]
+            layer_results, layer_nets = self.neuraln.forward_network(
+                x_pattern, 
+                self.f_act_hidden, 
+                self.f_act_output
+            )
+            final_output.append(layer_results[-1])
 
-            epoch_mee += (np.sum((d_pattern - final_output) ** 2)) ** 0.5
-            epoch_mse += (np.sum((d_pattern - final_output) ** 2))
+
+            #epoch_mee += (np.sum((d_pattern - final_output) ** 2)) ** 0.5
+            #epoch_mse += (np.sum((d_pattern - final_output) ** 2))
 
             # L'asterisco serve per raggruppare in lista tutti i risultati
             # tranne, in questo caso, l'ultimo. Essendo specificato.
             # quindi deltas = [dwk, dwj2, dwj1], nel caso di una rete con 2 hidden layer
 
             deltas, grad_norm = compute_delta_all_layers_list(
-                            d = d_pattern,
-                            layer_results_list = layer_results,
-                            weights_matrix_list = self.neuraln.weights_matrix_list,
-                            x_pattern = x_pattern,
-                            f_act_hidden = self.f_act_hidden, # Nota: La funzione backprop gestirà la derivata internamente
-                            f_act_output = self.f_act_output,
-                            old_deltas = self.old_deltas if self.momentum else None,
-                            alpha_momentum = self.alpha_mom,
-                            max_norm_gradient_for_clipping = self.max_gradient_norm
-                        )
+                d=d_pattern,
+                layer_results_list=layer_results,
+                layer_net_list=layer_nets,  # ← NUOVO parametro!
+                weights_matrix_list=self.neuraln.weights_matrix_list,
+                x_pattern=x_pattern,
+                f_act_hidden=self.f_act_hidden,
+                f_act_output=self.f_act_output,
+                old_deltas=self.old_deltas if self.momentum else None,
+                alpha_momentum=self.alpha_mom,
+                max_norm_gradient_for_clipping=self.max_gradient_norm
+            )
                         
             epoch_grad += grad_norm
 
@@ -309,9 +330,11 @@ class Trainer:
                     batch_deltas[i] += deltas[i]
             # CASO ONLINE
             else:
-                self.neuraln.update_weights(deltas, eta=self.learning_rate)
+                self.neuraln.update_weights(deltas, eta=self.learning_rate, lambda_l2=self.lambdal2)
                 if self.momentum: self.old_deltas = deltas
 
+        epoch_mee = mean_euclidean_error(final_output,d_matrix)
+        epoch_mse = mean_squared_error(final_output,d_matrix)
         # Se fine epoca e se batch, aggiorna gli update weights 
         if self.batch:
             # Media dei gradienti
@@ -320,13 +343,13 @@ class Trainer:
             if self.use_decay and self.epoch > 0 and self.epoch % self.decay_step == 0:
                 self.learning_rate *= self.decay_factor
             
-            self.neuraln.update_weights(avg_deltas, eta = self.learning_rate)
+            self.neuraln.update_weights(avg_deltas, eta = self.learning_rate,lambda_l2=self.lambdal2)
             # Salva per momentum prossima epoca
             if self.momentum: self.old_deltas = avg_deltas
 
         return {
-            'mee_tr': epoch_mee / n_patterns,
-            'mse_tr': epoch_mse / n_patterns,
+            'mee_tr': epoch_mee,
+            'mse_tr': epoch_mse,
             'grad_norm': epoch_grad / n_patterns
         }
     
@@ -341,24 +364,19 @@ class Trainer:
 
             if metric_fn == compute_accuracy:
 
-                vl_layer_results = self.neuraln.forward_network(vl_x[pattern], sigmaf)
+                vl_layer_results, _ = self.neuraln.forward_network(vl_x[pattern],self.f_act_hidden, sigmaf)
             else : 
-                vl_layer_results = self.neuraln.forward_network(vl_x[pattern],linear)
+                vl_layer_results, _ = self.neuraln.forward_network(vl_x[pattern],self.f_act_hidden,linear)
 
             vl_final_output = vl_layer_results[-1]
-            
-            #epoch_mee_vl += (np.sum((vl_d[pattern] - vl_final_output) ** 2)) ** 0.5
-            #epoch_mse_vl += (np.sum((vl_d[pattern] - vl_final_output) ** 2))
-            
+
             vl_final_output_array.append(vl_final_output.tolist())
 
-            
             # Calcola accuracy per monitoring
             if metric_fn == compute_accuracy:
                 if compute_accuracy(vl_final_output, vl_d[pattern]):
                     correct_predictions += 1
-        #vl_d=vl_d.flatten()
-        #vl_d=vl_d.reshape(4,100)
+                    
         epoch_mee_vl = mean_euclidean_error(vl_final_output_array, vl_d)
         epoch_mse_vl = mean_squared_error(vl_final_output_array, vl_d)
         
@@ -366,7 +384,6 @@ class Trainer:
         #avg_mee_vl = epoch_mee_vl / n_patterns
         #avg_mse_vl = epoch_mse_vl / n_patterns
         accuracy_vl = correct_predictions / n_patterns
-        
         if metric_fn is not compute_accuracy:
             vl_score = epoch_mee_vl
         else:
@@ -381,4 +398,42 @@ class Trainer:
             'mee_vl': epoch_mee_vl,
             'mse_vl': epoch_mse_vl,
             'accuracy_vl': accuracy_vl
+        }
+
+    def _run_epoch_vl_CUP(self, vl_x, vl_d, metric_fn: Callable = None):
+        n_patterns = vl_x.shape[0]
+        # epoch_mee_vl, epoch_mse_vl = [], []
+        vl_final_output_array = []
+
+        for pattern in range(n_patterns):
+
+            if metric_fn == compute_accuracy:
+
+                vl_layer_results, _ = self.neuraln.forward_network(vl_x[pattern], self.f_act_hidden, sigmaf)
+            else:
+                vl_layer_results, _ = self.neuraln.forward_network(vl_x[pattern], self.f_act_hidden, linear)
+
+            vl_final_output = vl_layer_results[-1]
+
+            vl_final_output_array.append(vl_final_output.tolist())
+
+            # Calcola accuracy per monitoring
+        epoch_mee_vl = mean_euclidean_error(vl_final_output_array, vl_d)
+        epoch_mse_vl = mean_squared_error(vl_final_output_array, vl_d)
+
+        # IMPORTANTE: calcola le medie
+        # avg_mee_vl = epoch_mee_vl / n_patterns
+        # avg_mse_vl = epoch_mse_vl / n_patterns
+        if metric_fn is not compute_accuracy:
+            vl_score = epoch_mee_vl
+        else:
+            # Early stopping su MSE medio (non cumulativo!)
+            vl_score = epoch_mse_vl
+
+
+        return {
+            'vl_score': vl_score,
+            'mee_vl': epoch_mee_vl,
+            'mse_vl': epoch_mse_vl,
+            'accuracy_vl': 0.0
         }

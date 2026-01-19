@@ -7,8 +7,8 @@ from src.training.grid_search import GridSearch
 from src.activationf.relu import relu
 from src.activationf.sigmoid import sigmaf
 from src.activationf.linear import linear
-from src.utils import * 
-
+from src.utils import *
+from src.training.validation.k_fold import k_fold
 
 # Carica dati
 
@@ -22,57 +22,63 @@ d = d.to_numpy().astype(np.float64)
 x_i, x_min, x_max = normalize_data(x_i)
 d, d_min, d_max = normalize_data(d)
 
-# --- HOLD OUT SPLIT ---
-if cup_config.RUN_HOLD_OUT_VALIDATION:
+# --- HOLD OUT SPLIT --
+tr_input, tr_target, vl_input, vl_target = hold_out_validation(x_i, d, cup_config.SPLIT)
 
-    tr_input, tr_target, vl_input, vl_target = hold_out_validation(x_i, d, cup_config.SPLIT)
-
-#elif config.K_FOLD:
-# ...
-else:
-    x_i_remaining = x_i
-    d_remaining = d
-    validation_set = None
-    validation_d = None
-
-# GridSearch è una classe che usa **kwargs come argomento, ergo, 
-# non ha limiti di argomenti e combinazioni, 
+# GridSearch è una classe che usa **kwargs come argomento, ergo,
+# non ha limiti di argomenti e combinazioni,
 # al suo interno usa la classe TRAIN! Da tenere in considerazione se si
 # apportano modifiche lì!
 gs = GridSearch(
-    units_list = [[32,16],[64, 32], [64, 128, 32]],
-    n_outputs = [4],
+    units_list=[[32,64], [32, 64, 32]],
+    n_outputs = [cup_config.N_OUTPUTS],
     f_act_hidden = [relu],
     f_act_output = [linear],
-    learning_rate = [0.0001, 0.001],
-    use_decay = [True, False],
-    decay_factor = [0.99, 0.95],
-    decay_step = [100],
-    batch = [True],
-    epochs = [100],
+    learning_rate = [0.0005,0.001,0.0001],
+    use_decay = [True],
+    decay_factor =[0.95] ,#if use_decay==True else [0.0],
+    decay_step = [10],
+    batch = [cup_config.BATCH],
+    epochs=[1000],
     early_stopping = [True],
-    epsilon = [1e-5],
-    patience = [10],
-    momentum = [True],
-    alpha_mom = [0.9, 0.6],
-    max_gradient_norm = [5],
-    split = [0.2]
+    epsilon = [1e-4],
+    patience = [cup_config.PATIENCE],
+    momentum = [cup_config.MOMENTUM],
+    alpha_mom = [[0.9]],
+    max_gradient_norm = [20],
+    split = [cup_config.SPLIT],
+    verbose = [True],
+    validation = [True],
+    lambdal2 = [1e-5, 1e-4, 1e-3]
+
 )
 
-best_config, best_mee = gs.run(tr_input, tr_target, scouting_epochs=100)
-print(" 🏆🚀 BEST CONFIG: \n", best_config, "\n\n\n", "BEST MEE: ", best_mee)
+best_config, best_mee_GS = gs.run_for_cup(tr_input, tr_target, vl_input, vl_target,mean_euclidean_error)
 
-# |||| TRAIN FINALE SULLA MIGLIORE CONFIGURAZIONE TROVATA ||||
+number_of_patterns_in_one_fold=round(x_i.shape[0]/cup_config.FOLDS)
+mee_arr=np.zeros(cup_config.FOLDS)
+best_mee_K_FOLD=9999.
+best_accuracy=0.
+accuracy_allmodels=np.zeros(cup_config.FOLDS)
+trainers=[]
+for validation_fold in range(cup_config.FOLDS):
+    print("\nTraining fold ",validation_fold,"...\n")
+    tr_input,tr_target,vl_input,vl_targets=k_fold(x_i, d,cup_config.FOLDS,validation_fold)
+    if (cup_config.EARLY_STOPPING == True):
+        trainers.append(
+            Trainer(input_size=tr_input.shape[1], **best_config)
+        )
+        mee_tr, mse_tr, mee_vl, mse_vl, accuracy = trainers[validation_fold].fit_k_fold(tr_input, tr_target,validation_fold,
+                                                    vl_input, vl_targets, mean_euclidean_error)
+        mee_arr[validation_fold] = mee_vl
+        #print("\n \n \n",accuracy_history)
+        accuracy_allmodels[validation_fold] = accuracy
 
-best_config["epochs"] = 15000
-best_config["epsilon"] = 1e-7
+for i in range(mee_arr.shape[0]):
+    if (mee_arr[i] < best_mee_K_FOLD ):
+        print("entra")
+        best_mee_K_FOLD = mee_arr[i]
 
-train_best_config = Trainer(
-    input_size = tr_input.shape[1],
-    **best_config,
-    verbose = True,
-    validation = True
-)
+print(" 🏆🚀 BEST CONFIG IN GRID SEARCH: \n", best_config, "\n", "BEST MEE IN GRID SEARCH: ", best_mee_GS)
 
-train_best_config.fit(tr_input, tr_target, vl_input, vl_target)
-
+print("\nMiglior modello trovato tra quelli analizzati con la K fold cross validation con ",cup_config.FOLDS," folds: \nmiglior mee=",best_mee_K_FOLD,"\ncon media:",np.mean(mee_arr), "\nl'array di tutte le folds", mee_arr)

@@ -4,22 +4,18 @@ import os
 import time
 from datetime import datetime
 
-def _ensure_dir(path="../results/plots"):
-    """Assicura che la cartella di destinazione esista."""
-    if not os.path.exists(path):
-        os.makedirs(path)
-    return path
+PROJECT_ROOT = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "..", "..")
+)
 
-def _generate_filename(prefix="plot"):
-    """Genera un nome file unico basato sul timestamp."""
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    return f"{prefix}_{timestamp}.png"
 
-def plot_errors_with_validation_error(trainer, training_time: float, save_path="../results/plots"):
-    """
-    Plot Training vs Validation con naming coerente (tr / vl)
-    """
-    dir_path = _ensure_dir(save_path)
+
+def plot_errors_with_validation_error(
+    trainer,
+    training_time: float,
+    relative_path="results/plots"
+):
+    dir_path = _ensure_dir(relative_path)
 
     epochs = np.arange(1, len(trainer.tr_mee_history) + 1)
 
@@ -110,16 +106,15 @@ def plot_errors_with_validation_error(trainer, training_time: float, save_path="
     fname = _generate_filename("CUP_tr_vs_vl")
     full_path = os.path.join(dir_path, fname)
     plt.savefig(full_path, dpi=300)
-    plt.savefig("plot1.png")
 
     print(f"✅ Grafico salvato in: {full_path}")
 
 
-def plot_errors(trainer, training_time: float, save_path="../results/plots"):
+def plot_errors(trainer, training_time: float, relative_path="results/plots"):
     """
     Plot solo training (no validation)
     """
-    dir_path = _ensure_dir(save_path)
+    dir_path = _ensure_dir(relative_path)
     epochs = np.arange(1, len(trainer.tr_mee_history) + 1)
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
@@ -152,6 +147,67 @@ def plot_errors(trainer, training_time: float, save_path="../results/plots"):
 
     fname = _generate_filename("CUP_train_only")
     plt.savefig(os.path.join(dir_path, fname))
-    plt.savefig("plot2.png")
 
     print(f"✅ Grafico salvato in: {os.path.join(dir_path, fname)}")
+
+def plot_accuracy(trainer, training_time: float, relative_path="results/plots"):
+    
+    dir_path = _ensure_dir(relative_path)
+    epochs = np.arange(1, len(trainer.tr_mee_history) + 1)
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+
+    ax1.plot(
+        epochs,
+        trainer.tr_mee_history,
+        label=f"MEE_tr (final={trainer.accuracy_history[-1]:.4f})"
+    )
+    ax1.set_title("Training accuracy")
+    ax1.set_xlabel("Epoch")
+    ax1.set_ylabel("accuracy")
+    ax1.grid(True, alpha=0.3)
+    ax1.legend()
+
+    ax2.plot(
+        epochs,
+        trainer.tr_mse_history,
+        label=f"MSE_tr (final={trainer.accuracy_history[-1]:.4f})"
+    )
+    ax2.set_title("Training MSE")
+    ax2.set_xlabel("Epoch")
+    ax2.set_ylabel("MSE")
+    ax2.set_yscale("log")
+    ax2.grid(True, alpha=0.3)
+    ax2.legend()
+
+    plt.suptitle(f"Training Profile – time: {training_time:.2f}s")
+    plt.tight_layout()
+
+    fname = _generate_filename("Monk_accuracy_training")
+    plt.savefig(os.path.join(dir_path, fname))
+
+    print(f"✅ Grafico salvato in: {os.path.join(dir_path, fname)}")
+
+def _ensure_dir(relative_path="results/plots"):
+    """
+    Crea una directory RELATIVA ALLA CARTELLA DEL PROGETTO
+    """
+
+    PROJECT_ROOT = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", ".."))
+
+    print("PROJECT_ROOT", PROJECT_ROOT)
+
+    full_path = os.path.join(PROJECT_ROOT, relative_path)
+
+    if not os.path.exists(full_path):
+        os.makedirs(full_path, exist_ok=True)
+
+    return full_path
+
+
+
+def _generate_filename(prefix="plot"):
+    """Genera un nome file unico basato sul timestamp."""
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    return f"{prefix}_{timestamp}.png"

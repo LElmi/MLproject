@@ -10,7 +10,7 @@ UNITS_LIST = [4]
 N_OUTPUTS = 1
 
 # ======= ACTIVATION F =======
-FUN_ACT_HIDDEN = leaky_relu
+FUN_ACT_HIDDEN = sigmaf
 FUN_ACT_OUTPUT = sigmaf
 
 # ====== LEARNING RATE =======
@@ -26,21 +26,21 @@ DECAY_STEP = 10
 BATCH = True  
 
 # ======== N EPOCHS ==========
-EPOCHS = 1000
+EPOCHS = 10
 
 # ======== EARLY STOPPING ====
-EARLY_STOPPING = True 
+EARLY_STOPPING = False
 EPSILON = 0.1  # Più tollerante per MSE
 PATIENCE = 15
 
 # ========= MOMENTUM =========
-MOMENTUM = True  
+MOMENTUM = False
 ALPHA_MOM = 0.9  # ← 0.9 è standard
 
 # ========= VALIDATION =======
 RUN_VALIDATION = True
 RUN_HOLD_OUT_VALIDATION = True
-SPLIT = 20  
+SPLIT = 20 
 
 # ======= REGULARIZATION =====
 LAMBDA = 0.0  # ← Disattiva per ora, MONK è semplice
@@ -52,4 +52,4 @@ MAX_GRADIENT_NORM = 10.0
 VERBOSE = True
 
 # ===== K-FOLD ====
-FOLDS = 5
+FOLDS = 2
