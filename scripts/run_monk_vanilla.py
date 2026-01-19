@@ -40,7 +40,7 @@ trainer = Trainer(
     lambdal2=0.00001
 )
 
-# split (anche se non usato esplicitamente)
+# split
 x_i_tr, d_tr, x_i_vl, d_vl = Stratified_Split.hold_out_validation_stratified(
     x_i, d, 20, random_state=None
 )
@@ -60,10 +60,8 @@ print("Inizio Training...")
 
 for epoch in range(n_epochs):
 
-    # ---- training di una singola epoca ----
     trainer._run_epoch(x_i, d, n_patterns=x_i.shape[0])
 
-    # ---- valutazione sul test set ----
     matched = 0
     for i, x_i_test_pattern in enumerate(x_i_test):
         layer_results, _ = trainer.neuraln.forward_network(
@@ -80,7 +78,6 @@ for epoch in range(n_epochs):
     accuracy = matched / len(d_test)
     test_accuracies.append(accuracy)
 
-    # stampa ogni 100 epoche
     if (epoch + 1) % 100 == 0:
         print(f"Epoch {epoch+1}/{n_epochs} - Test Accuracy: {accuracy*100:.2f}%")
 
@@ -96,8 +93,4 @@ plt.ylabel("Accuracy Test")
 plt.title("Accuracy sul Test Set vs Epoche (MONK-1)")
 plt.grid(True)
 plt.show()
-
-# -------------------------------
-# ACCURACY FINALE
-# -------------------------------
 print(f"\nACCURACY FINALE ON TEST SET = {test_accuracies[-1] * 100:.2f}%")
