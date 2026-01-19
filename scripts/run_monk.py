@@ -14,8 +14,6 @@ from src.training.validation.k_fold import k_fold
 x_i, d = load_monks_data(monk_config.PATH_DT)
 x_i = x_i.to_numpy().astype(np.float64)
 d = d.to_numpy().astype(np.float64)
-#x_i, x_min, x_max = normalize_data(x_i)
-
 
 if monk_config.RUN_HOLD_OUT_VALIDATION:
 
@@ -32,22 +30,22 @@ gs = GridSearch(
     n_outputs = [monk_config.N_OUTPUTS],
     f_act_hidden = [sigmaf],
     f_act_output = [sigmaf],
-    learning_rate = [0.005, 0.0025],
-    use_decay = [True],
+    learning_rate = [0.05],
+    use_decay = [False],
     decay_factor =[0.90] ,#if use_decay==True else [0.0],
     decay_step = [10],
-    batch = [monk_config.BATCH],
-    epochs=[50],
-    early_stopping = [True],
-    epsilon = [monk_config.EPSILON],
+    batch = [False],
+    epochs=[500],
+    early_stopping = [False],
+    epsilon = [0.01],
     patience = [monk_config.PATIENCE],
     momentum = [monk_config.MOMENTUM],
     alpha_mom = [[0.9]],
     max_gradient_norm = [20],
     split = [monk_config.SPLIT],
     verbose = [True],
-    validation = [True],
-    lambdal2 = [1e-5, 1e-4, 1e-3]
+    validation = [False],
+    lambdal2 = [0]
 
 )
 
@@ -91,6 +89,10 @@ for validation_fold in range(monk_config.FOLDS):
 
 print(" 🏆🚀 BEST CONFIG IN GRID SEARCH: \n", best_config, "\n\n\n", "BEST ACCURACY: ", best_accuracy_GS)
 
-print("\n\n\n\nMiglior modello trovato tra quelli analizzati con la K fold cross validation con ",monk_config.FOLDS," folds: \nmiglior mee=",best_mee, "\n con accuracy=",best_accuracy*100.,"%", "\n e accuracy media=", mean_accuracy*100,"%\n\n\n",accuracy_allmodels)
+print("\n\n\n\nMiglior modello trovato tra quelli analizzati con la K fold cross validation con ",
+      monk_config.FOLDS," folds: \nmiglior mee=",
+      best_mee, "\n con accuracy=",best_accuracy*100.,
+      "%", "\n e accuracy media=", mean_accuracy*100,
+      "%\n\n\n",accuracy_allmodels)
 
 

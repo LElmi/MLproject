@@ -3,7 +3,7 @@ from src.activationf.linear import linear
 from src.activationf.leaky_relu import leaky_relu
 
 # ======== PATHS DATA ========
-PATH_DT = "../data/cup/training_data/ML-CUP25-TR.csv"
+PATH_DT = "data/cup/training_data/ML-CUP25-TR.csv"
 
 # ======== ARCHITECTURE ========
 UNITS_LIST = [32, 64, 16]  

@@ -1,5 +1,7 @@
 import itertools
-from src.training.trainer.trainer import Trainer
+from src.training.trainer.trainer_cup import TrainerCup
+from src.training.trainer.trainer_monk import TrainerMonk
+
 
 
 class GridSearch:
@@ -43,7 +45,7 @@ class GridSearch:
         """
         for i, config_dict in enumerate(self.combinations):
             # Qui istanziamo il Trainer usando lo spacchettamento del dizionario **
-            trainer = Trainer(
+            trainer = TrainerMonk(
                 input_size=x_train.shape[1],
                 **config_dict 
             )
@@ -67,7 +69,7 @@ class GridSearch:
         """
         for i, config_dict in enumerate(self.combinations):
             # Qui istanziamo il Trainer usando lo spacchettamento del dizionario **
-            trainer = Trainer(
+            trainer = TrainerCup(
                 input_size=x_train.shape[1],
                 **config_dict
             )
