@@ -48,11 +48,11 @@ gs = GridSearch(
 )
 """
 gs = GridSearch(
-    units_list=[[32,16]],
+    units_list=[[48,32],[32,16], [16,8], [8,4,8]],
     n_outputs=[monk_config.N_OUTPUTS],
     f_act_hidden=[leaky_relu],
     f_act_output=[sigmaf],
-    learning_rate=[0.1],
+    learning_rate=[0.1, 0.05],
     use_decay=[True],
     decay_factor=[0.99],
     decay_step=[100],

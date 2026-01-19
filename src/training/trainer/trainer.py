@@ -353,7 +353,7 @@ class Trainer:
         correct_predictions = 0
         vl_final_output_array = []
         
-        for pattern in range(n_patterns):
+        for pattern in range(vl_x.shape[0]):
 
             vl_layer_results = self.neuraln.forward_network(vl_x[pattern],self.f_act_hidden, sigmaf)
 

@@ -115,6 +115,8 @@ class NN:
                 weights = np.random.randn(n_in, n_out)* np.sqrt(2.0 / n_in)*0.01
             weights = self._add_bias(weights)
 
+
+
             self.weights_matrix_list.append(weights)
 
     def _add_bias(self, x: Array2D) -> Array2D:

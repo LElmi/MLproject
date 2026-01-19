@@ -52,4 +52,4 @@ MAX_GRADIENT_NORM = 10.0
 VERBOSE = True
 
 # ===== K-FOLD ====
-FOLDS = 8
+FOLDS = 9
