@@ -88,6 +88,91 @@ class Trainer:
 
         self.accuracy_history = []
 
+    def fit_k_fold(self,
+                   input_matrix: np.ndarray,
+                   d_matrix: np.ndarray,
+                   fold: int,
+                   vl_input: np.ndarray = None,
+                   vl_targets: np.ndarray = None,
+                   metric_fn: Callable = None,  # Aggiunto per gestire Accuracy
+                   metric_mode: str = 'min'):  # Aggiunto per Early Stopper
+
+        n_patterns = input_matrix.shape[0]
+        start_time = time.perf_counter()
+
+        # Inizializza lo stopper come nel metodo fit standard
+        stopper = EarlyStopper(
+            patience=self.patience,
+            min_delta=self.epsilon,
+            mode=metric_mode
+        )
+
+        final_vl_accuracy = 0.0  # Valore di default
+
+        if self.verbose:
+            print(f"--- Inizio Training Fold {fold} (Early stopping: {self.early_stopping}) ---")
+
+        for epoch in range(1, self.epochs + 1):
+            self.epoch = epoch
+
+            # CORREZIONE: Rimosso il 4° argomento 'epoch' che causava TypeError
+            epoch_results = self._run_epoch(input_matrix, d_matrix, n_patterns)
+
+            self.tr_mee_history.append(epoch_results["mee_tr"])
+            self.tr_mse_history.append(epoch_results["mse_tr"])
+
+            # Gestione Validation
+            if self.validation and vl_input is not None:
+                # Passiamo metric_fn per calcolare accuracy se serve
+                if metric_fn is compute_accuracy:
+                    epoch_vl_results = self._run_epoch_vl(vl_input, vl_targets, metric_fn)
+                else:
+                    epoch_vl_results = self._run_epoch_vl_CUP(vl_input, vl_targets, metric_fn)
+                self.vl_mee_history.append(epoch_vl_results["mee_vl"])
+                self.vl_mse_history.append(epoch_vl_results["mse_vl"])
+
+                # Salviamo accuracy se presente
+                final_vl_accuracy = epoch_vl_results.get("accuracy_vl", 0.0)
+                if final_vl_accuracy > 0:
+                    self.accuracy_history.append(final_vl_accuracy)
+
+                # Early Stopping Logic (Coerente con fit)
+                vl_score = epoch_vl_results["vl_score"]
+
+                if self.early_stopping:
+                    if stopper(vl_score, self.neuraln.weights_matrix_list):
+                        if self.verbose:
+                            print(f"Early Stopping al fold {fold}, epoca {epoch}")
+                        # Ripristina i pesi migliori
+                        self.neuraln.weights_matrix_list = stopper.best_weights
+                        break
+
+            if self.verbose and epoch % 10 == 0:
+                print(f"|| Fold {fold} | Epoch {epoch} | TR MEE: {epoch_results['mee_tr']:.4f} ||")
+            if (epoch == self.epochs):
+                print("\n\n\n\nFine Training all'epoca:", epoch)
+
+        # Salvataggio modello a fine training (o se early stopping attivato)
+        # Nota: save_model deve essere importata da src.utils
+        if self.verbose: print(f"Salvataggio modello per fold {fold}...")
+        save_model(self, fold)
+
+        if self.verbose:
+            print(f"\n--- Training Fold {fold} Completato in {time.perf_counter() - start_time:.2f}s ---\n")
+        if self.validation and self.validation:
+            plot_errors_with_validation_error(self, time.perf_counter() - start_time)
+
+        elif self.validation and metric_fn == compute_accuracy:
+            plot_accuracy(self, time.perf_counter() - start_time)
+        else:
+            plot_errors(self, time.perf_counter() - start_time)
+        # RETURN STANDARD A 5 VALORI (Come fit)
+        return (self.tr_mee_history[-1],
+                self.tr_mse_history[-1],
+                self.vl_mee_history[-1] if self.validation else 0.0,
+                self.vl_mse_history[-1] if self.validation else 0.0,
+                final_vl_accuracy)
+
     def fit(self, 
             tr_x: np.ndarray, 
             tr_d: np.ndarray,
@@ -177,175 +262,168 @@ class Trainer:
                         self.vl_mee_history[-1] if self.validation else 0.0,
                         self.vl_mse_history[-1] if self.validation else 0.0,)
                         #final_vl_accuracy)
-    
 
-    def fit_k_fold(self, 
-                   input_matrix: np.ndarray, 
-                   d_matrix: np.ndarray, 
-                   fold: int,
-                   vl_input: np.ndarray = None, 
-                   vl_targets: np.ndarray = None,
-                   metric_fn: Callable = None,      # Aggiunto per gestire Accuracy
-                   metric_mode: str = 'min'):       # Aggiunto per Early Stopper
-        
-        n_patterns = input_matrix.shape[0]
-        start_time = time.perf_counter()
-        
-        # Inizializza lo stopper come nel metodo fit standard
-        stopper = EarlyStopper(
-            patience=self.patience,
-            min_delta=self.epsilon,
-            mode=metric_mode
-        )
-        
-        final_vl_accuracy = 0.0 # Valore di default
-
-        if self.verbose:
-            print(f"--- Inizio Training Fold {fold} (Early stopping: {self.early_stopping}) ---")
-
-        for epoch in range(1, self.epochs + 1):
-            self.epoch = epoch
-            
-            # CORREZIONE: Rimosso il 4° argomento 'epoch' che causava TypeError
-            epoch_results = self._run_epoch(input_matrix, d_matrix, n_patterns)
-
-            self.tr_mee_history.append(epoch_results["mee_tr"])
-            self.tr_mse_history.append(epoch_results["mse_tr"])
-
-            # Gestione Validation
-            if self.validation and vl_input is not None:
-                # Passiamo metric_fn per calcolare accuracy se serve
-                if metric_fn is compute_accuracy:
-                    epoch_vl_results = self._run_epoch_vl(vl_input, vl_targets, metric_fn)
-                else:
-                    epoch_vl_results = self._run_epoch_vl_CUP(vl_input, vl_targets, metric_fn)
-                self.vl_mee_history.append(epoch_vl_results["mee_vl"])
-                self.vl_mse_history.append(epoch_vl_results["mse_vl"])
-                
-                # Salviamo accuracy se presente
-                final_vl_accuracy = epoch_vl_results.get("accuracy_vl", 0.0)
-                if final_vl_accuracy > 0:
-                    self.accuracy_history.append(final_vl_accuracy)
-
-                # Early Stopping Logic (Coerente con fit)
-                vl_score = epoch_vl_results["vl_score"]
-                
-                if self.early_stopping:
-                    if stopper(vl_score, self.neuraln.weights_matrix_list):
-                        if self.verbose: 
-                            print(f"Early Stopping al fold {fold}, epoca {epoch}")
-                        # Ripristina i pesi migliori
-                        self.neuraln.weights_matrix_list = stopper.best_weights
-                        break
-
-            if self.verbose and epoch % 10 == 0:
-                print(f"|| Fold {fold} | Epoch {epoch} | TR MEE: {epoch_results['mee_tr']:.4f} ||")
-            if (epoch==self.epochs):
-                print("\n\n\n\nFine Training all'epoca:", epoch)
-
-        # Salvataggio modello a fine training (o se early stopping attivato)
-        # Nota: save_model deve essere importata da src.utils
-        if self.verbose: print(f"Salvataggio modello per fold {fold}...")
-        save_model(self, fold) 
-
-        if self.verbose:
-            print(f"\n--- Training Fold {fold} Completato in {time.perf_counter() - start_time:.2f}s ---\n")
-        if self.validation and self.validation:
-            plot_errors_with_validation_error(self, time.perf_counter() - start_time)
-
-        elif self.validation and metric_fn==compute_accuracy:
-            plot_accuracy(self, time.perf_counter() - start_time)
-        else:
-            plot_errors(self, time.perf_counter() - start_time)
-        # RETURN STANDARD A 5 VALORI (Come fit)
-        return (self.tr_mee_history[-1], 
-                self.tr_mse_history[-1],
-                self.vl_mee_history[-1] if self.validation else 0.0,
-                self.vl_mse_history[-1] if self.validation else 0.0,
-                final_vl_accuracy)
-
-
-    def _run_epoch(self, 
-                   input_matrix: np.ndarray, 
-                   d_matrix: np.ndarray, 
+    def _run_epoch(self,
+                   input_matrix: np.ndarray,
+                   d_matrix: np.ndarray,
                    n_patterns: int) -> Dict[str, float]:
-        """
-        Metodo che nasce con l'esigenza di portare un po' di logica fuori dal train,
-        runna una epoca, restitutuendo le informazioni sull'errore.
-        Questo metodo gestisce la divisione della logica in base all'esplorazione tramite batch o online,
-
-        """
 
         indices = np.arange(n_patterns)
-        #if not self.batch: np.random.shuffle(indices)
-        np.random.shuffle(indices)
-        epoch_mee, epoch_mse, epoch_grad = 0.0, 0.0, 0.0
+        if not self.batch:
+            np.random.shuffle(indices)
 
-        # Crea una lista di batch quindi batch_deltas = [ [dwk], [dwj2], [dwj1]], 
-        # in base a quanti sono le matrici dentro la lista dei pesi
-        if self.batch: 
+        epoch_grad = 0.0
+        final_output = []
+#triggera online solo se pattern_in_batch==pattern totali
+        batch_percentage = getattr(self, "batch_percentage", 0.1)
+        #patterns_in_batch = max(1, int(round(n_patterns * batch_percentage)))
+        patterns_in_batch=64
+        # ---------------------------------batch
+        if self.batch:
             batch_deltas = [np.zeros_like(w) for w in self.neuraln.weights_matrix_list]
-        final_output=[]
-        # Scorre tutti gli indici dividendo il comportamento in base a se è batch oppure online
-        for idx in indices:
 
-            x_pattern, d_pattern = input_matrix[idx], d_matrix[idx]
+            for idx in indices:
+                x_pattern = input_matrix[idx]
+                d_pattern = d_matrix[idx]
 
-            layer_results = self.neuraln.forward_network(x_pattern, self.f_act_hidden,self.f_act_output)
-            final_output.append(layer_results[-1])
+                layer_results, layer_nets = self.neuraln.forward_network(
+                    x_pattern,
+                    self.f_act_hidden,
+                    self.f_act_output
+                )
+                final_output.append(layer_results[-1])
 
-            #epoch_mee += (np.sum((d_pattern - final_output) ** 2)) ** 0.5
-            #epoch_mse += (np.sum((d_pattern - final_output) ** 2))
+                deltas, grad_norm = compute_delta_all_layers_list(
+                    d=d_pattern,
+                    layer_results_list=layer_results,
+                    layer_net_list=layer_nets,
+                    weights_matrix_list=self.neuraln.weights_matrix_list,
+                    x_pattern=x_pattern,
+                    f_act_hidden=self.f_act_hidden,
+                    f_act_output=self.f_act_output,
+                    old_deltas=self.old_deltas if self.momentum else None,
+                    alpha_momentum=self.alpha_mom,
+                    max_norm_gradient_for_clipping=self.max_gradient_norm
+                )
 
-            # L'asterisco serve per raggruppare in lista tutti i risultati
-            # tranne, in questo caso, l'ultimo. Essendo specificato.
-            # quindi deltas = [dwk, dwj2, dwj1], nel caso di una rete con 2 hidden layer
-
-            deltas, grad_norm = compute_delta_all_layers_list(
-                            d = d_pattern,
-                            layer_results_list = layer_results,
-                            weights_matrix_list = self.neuraln.weights_matrix_list,
-                            x_pattern = x_pattern,
-                            f_act_hidden = self.f_act_hidden, # Nota: La funzione backprop gestirà la derivata internamente
-                            f_act_output = self.f_act_output,
-                            old_deltas = self.old_deltas if self.momentum else None,
-                            alpha_momentum = self.alpha_mom,
-                            max_norm_gradient_for_clipping = self.max_gradient_norm
-                        )
-                        
-            epoch_grad += grad_norm
-
-            #if epoch % 50 == 0:
-            #    print("VEDERE SE NECESSARIO CLIPPING: ", grad_norm, "EPOCA: ", epoch, "\n")
-
-            # CASO BATCH
-            if self.batch:
+                epoch_grad += grad_norm
                 for i in range(len(batch_deltas)):
                     batch_deltas[i] += deltas[i]
-            # CASO ONLINE
-            else:
-                self.neuraln.update_weights(deltas, eta=self.learning_rate, lambda_l2=self.lambdal2)
-                if self.momentum: self.old_deltas = deltas
-        epoch_mee = mean_euclidean_error(final_output,d_matrix)
-        epoch_mse = mean_squared_error(final_output,d_matrix)
-        # Se fine epoca e se batch, aggiorna gli update weights 
-        if self.batch:
-            # Media dei gradienti
-            avg_deltas = [d_mat / n_patterns for d_mat in batch_deltas]
 
-            if self.use_decay and self.epoch > 0 and self.epoch % self.decay_step == 0:
-                self.learning_rate *= self.decay_factor
-            
-            self.neuraln.update_weights(avg_deltas, eta = self.learning_rate,lambda_l2=self.lambdal2)
-            # Salva per momentum prossima epoca
-            if self.momentum: self.old_deltas = avg_deltas
+            avg_batch_deltas = [d_mat / n_patterns for d_mat in batch_deltas]
+            self.neuraln.update_weights(
+                avg_batch_deltas,
+                eta=self.learning_rate,
+                lambda_l2=self.lambdal2
+            )
+
+            if self.momentum:
+                self.old_deltas = avg_batch_deltas
+
+        # ----------------------minibatch
+        elif patterns_in_batch < n_patterns:
+            all_minibatches = [
+                indices[i:i + patterns_in_batch]
+                for i in range(0, n_patterns, patterns_in_batch)
+            ]
+            for minibatch in all_minibatches:
+                minibatch_deltas = [np.zeros_like(w) for w in self.neuraln.weights_matrix_list]
+                minibatch_grad = 0
+
+                for idx in minibatch:
+                    x_pattern = input_matrix[idx]
+                    d_pattern = d_matrix[idx]
+
+                    layer_results, layer_nets = self.neuraln.forward_network(
+                        x_pattern,
+                        self.f_act_hidden,
+                        self.f_act_output
+                    )
+                    final_output.append(layer_results[-1])
+
+                    deltas, grad_norm = compute_delta_all_layers_list(
+                        d=d_pattern,
+                        layer_results_list=layer_results,
+                        layer_net_list=layer_nets,
+                        weights_matrix_list=self.neuraln.weights_matrix_list,
+                        x_pattern=x_pattern,
+                        f_act_hidden=self.f_act_hidden,
+                        f_act_output=self.f_act_output,
+                        old_deltas=self.old_deltas if self.momentum else None,
+                        alpha_momentum=self.alpha_mom,
+                        max_norm_gradient_for_clipping=self.max_gradient_norm
+                    )
+
+                    minibatch_grad += grad_norm
+                    for i in range(len(minibatch_deltas)):
+                        minibatch_deltas[i] += deltas[i]
+
+                # MEDIA
+                avg_minibatch_deltas = [d_mat / len(minibatch) for d_mat in minibatch_deltas]
+                minibatch_grad /= len(minibatch)
+
+                epoch_grad += minibatch_grad
+
+                self.neuraln.update_weights(
+                    avg_minibatch_deltas,
+                    eta=self.learning_rate,
+                    lambda_l2=self.lambdal2
+                )
+
+                if self.momentum:
+                    self.old_deltas = avg_minibatch_deltas
+
+        #---------------------------------Online
+        else:
+            for idx in indices:
+                x_pattern = input_matrix[idx]
+                d_pattern = d_matrix[idx]
+
+                layer_results, layer_nets = self.neuraln.forward_network(
+                    x_pattern,
+                    self.f_act_hidden,
+                    self.f_act_output
+                )
+                final_output.append(layer_results[-1])
+
+                deltas, grad_norm = compute_delta_all_layers_list(
+                    d=d_pattern,
+                    layer_results_list=layer_results,
+                    layer_net_list=layer_nets,
+                    weights_matrix_list=self.neuraln.weights_matrix_list,
+                    x_pattern=x_pattern,
+                    f_act_hidden=self.f_act_hidden,
+                    f_act_output=self.f_act_output,
+                    old_deltas=self.old_deltas if self.momentum else None,
+                    alpha_momentum=self.alpha_mom,
+                    max_norm_gradient_for_clipping=self.max_gradient_norm
+                )
+
+                epoch_grad += grad_norm
+
+                self.neuraln.update_weights(
+                    deltas,
+                    eta=self.learning_rate,
+                    lambda_l2=self.lambdal2
+                )
+
+                if self.momentum:
+                    self.old_deltas = deltas
+
+        epoch_mee = mean_euclidean_error(final_output, d_matrix)
+        epoch_mse = mean_squared_error(final_output, d_matrix)
 
         return {
-            'mee_tr': epoch_mee / n_patterns,
-            'mse_tr': epoch_mse / n_patterns,
+            "mee_tr": epoch_mee,
+            "mse_tr": epoch_mse,
+            "grad": epoch_grad
+        }
+
+        return {
+            'mee_tr': epoch_mee,
+            'mse_tr': epoch_mse,
             'grad_norm': epoch_grad / n_patterns
         }
-    
 
     def _run_epoch_vl(self, vl_x, vl_d, metric_fn: Callable = None):
         n_patterns = vl_x.shape[0]

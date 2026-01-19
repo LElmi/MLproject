@@ -76,6 +76,8 @@ class NN:
         # Ritorna le liste
         return self.layer_results_list, self.layer_net_list
 
+
+
     def _generate_weights_matrix_list(self):
         """
         Lavora con self.units_list: una lista di interi corrispondenti al numero di unità,
@@ -85,21 +87,29 @@ class NN:
             - ...
         Ritorna una lista di matrici di pesi
         """
-
         layer_sizes = [self.n_inputs] + self.units_list + [self.n_outputs]
+
+        # Clear old if any
+        self.weights_matrix_list = []
 
         for i in range(len(layer_sizes) - 1):
             n_in = layer_sizes[i]
             n_out = layer_sizes[i + 1]
 
-            # Buono per SIGMOIDE
-            limit = np.sqrt(6 / (n_in + n_out))
-            weights = np.random.uniform(-limit, limit, (n_in, n_out))
+            # ---- Output layer (Xavier / Glorot) ----
+            if i == len(layer_sizes) - 2:
+                # Glorot/Xavier uniform: range = ±sqrt(6 / (n_in + n_out))
+                limit = np.sqrt(6.0 / (n_in + n_out))
+                weights = np.random.uniform(-limit, limit, (n_in, n_out))
+
+            # ---- Hidden layers (He initialization) ----
+            else:
+                # He uniform: range = ±sqrt(6 / n_in)
+                he_limit = np.sqrt(6.0 / n_in)
+                weights = np.random.uniform(-he_limit, he_limit, (n_in, n_out))
+
+            # Add bias column
             weights = self._add_bias(weights)
-
-            #  Buono per ReLu
-            # weights = np.random.randn(n_in, n_out)* np.sqrt(2.0 / n_in)*0.01
-
             self.weights_matrix_list.append(weights)
 
     def _add_bias(self, x: Array2D) -> Array2D:
