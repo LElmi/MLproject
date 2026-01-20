@@ -10,3 +10,4 @@ def normalize_data(data):
     denom[denom == 0] = 1.0
     data_norm = (data - min_val) / denom
     return data_norm, min_val, max_val
+

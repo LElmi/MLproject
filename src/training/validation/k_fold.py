@@ -1,5 +1,6 @@
 import numpy as np
 from src.training.trainer.trainer_cup import TrainerCup
+from src.utils.compute_error import mean_euclidean_error, mean_squared_error
 
 def k_fold_split(x_i, d, folds, validation_fold):
 
@@ -22,7 +23,7 @@ def k_fold_split(x_i, d, folds, validation_fold):
     return tr_input, tr_targets, vl_input, vl_targets
 
 
-def run_k_fold_cup(x_full, d_full, k_folds, model_config, verbose=True):
+def run_k_fold_cup(x_full, d_full, k_folds, model_config, x_test_internal = None, verbose=True):
     """
     Esegue K-Fold e restituisce:
     - Statistiche Scalari: Mean MSE, Mean MEE (con std dev)
@@ -34,6 +35,9 @@ def run_k_fold_cup(x_full, d_full, k_folds, model_config, verbose=True):
     
     all_tr_mse_histories = [] 
     all_vl_mse_histories = []
+
+    test_internal_history_output = []
+
 
     for i in range(k_folds):
         if verbose: print(f"--- Fold {i+1}/{k_folds} ---")
@@ -48,7 +52,14 @@ def run_k_fold_cup(x_full, d_full, k_folds, model_config, verbose=True):
             vl_x=vl_input, vl_d=vl_target, 
             fold_id=i if verbose else None
         )
+
+        if x_test_internal is not None:
+            result, _ = trainer.neuraln.forward_network(x_test_internal, trainer.f_act_hidden, trainer.f_act_output)
+
+            # result[-1] = vettore di outuput della i-esima k-fold
+            test_internal_history_output.append(result[-1])
         
+
         mse_vals.append(min(trainer.vl_mse_history))
         mee_vals.append(min(trainer.vl_mee_history)) 
         
@@ -63,13 +74,29 @@ def run_k_fold_cup(x_full, d_full, k_folds, model_config, verbose=True):
     mean_tr_curve = np.mean(tr_cut, axis=0).tolist()
     mean_vl_curve = np.mean(vl_cut, axis=0).tolist()
 
-    return {
-        "mean_mse": np.mean(mse_vals),
-        "std_mse": np.std(mse_vals),
-        
-        "mean_mee": np.mean(mee_vals), 
-        "std_mee": np.std(mee_vals),
-        
-        "mean_tr_history": mean_tr_curve,
-        "mean_vl_history": mean_vl_curve
-    }
+    if x_test_internal is not None:
+        return {
+            "mean_mse": np.mean(mse_vals),
+            "std_mse": np.std(mse_vals),
+            
+            "mean_mee": np.mean(mee_vals), 
+            "std_mee": np.std(mee_vals),
+            
+            "mean_tr_history": mean_tr_curve,
+            "mean_vl_history": mean_vl_curve,
+
+            "test_internal_history_output" : test_internal_history_output
+
+        }
+    else:
+        return {
+            "mean_mse": np.mean(mse_vals),
+            "std_mse": np.std(mse_vals),
+            
+            "mean_mee": np.mean(mee_vals), 
+            "std_mee": np.std(mee_vals),
+            
+            "mean_tr_history": mean_tr_curve,
+            "mean_vl_history": mean_vl_curve
+
+        }

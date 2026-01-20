@@ -18,7 +18,10 @@ class GridSearch:
         self.best_config = None
         self.best_mse = float('inf')
         # self.best_accuracy = 0
+
         self.combinations = self._generate_combinations()
+
+
 
     def _generate_combinations(self):
         """
@@ -111,7 +114,7 @@ class GridSearch:
     
 
     
-    def run_for_cup_with_kfold(self, x_full, d_full, k_folds=4):
+    def run_for_cup_with_kfold(self, x_full, d_full, k_folds=4, x_test_internal = None):
             """
             Model Selection robusta: K-Fold su ogni configurazione.
             """
@@ -127,11 +130,12 @@ class GridSearch:
                     d_full=d_full,
                     k_folds=k_folds,
                     model_config=config_dict,
-                    verbose=False 
+                    verbose=False,
+                    x_test_internal = x_test_internal,
                 )
                 
-                mean_mse_val = stats['mean_mse'] 
-                
+                mean_mse_val = stats['mean_mse']
+
                 print(f"Config {i+1}/{len(self.combinations)} | Mean MSE: {mean_mse_val:.5f}")
 
                 # Aggiorna il best model
@@ -147,6 +151,8 @@ class GridSearch:
                     'vl_mse': stats['mean_vl_history']  # Usiamo la curva media calcolata
                 }
                 all_results.append(result_entry)
+
+
 
             # Chiamata al plotter FUORI dal ciclo for
             print("Generazione grafici...")
