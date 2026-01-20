@@ -26,13 +26,13 @@ if monk_config.RUN_HOLD_OUT_VALIDATION:
 # apportano modifiche lì!
 
 gs = GridSearch(
-    units_list=[[2], [4]],
+    units_listm = [[2], [4]],
     n_outputs = [monk_config.N_OUTPUTS],
     f_act_hidden = [sigmaf],
     f_act_output = [sigmaf],
     learning_rate = [0.05],
     use_decay = [False],
-    decay_factor =[0.90] ,#if use_decay==True else [0.0],
+    decay_factor = [0.90] ,#if use_decay==True else [0.0],
     decay_step = [10],
     batch = [False],
     epochs=[500],

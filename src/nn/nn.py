@@ -24,7 +24,7 @@ class NN:
         # MODIFICA: Salviamo sia gli output che i net (pre-attivazione)
         num_layers = len(self.units_list) + 1
         self.layer_results_list: list[Array1D] = [None] * num_layers
-        self.layer_net_list: list[Array1D] = [None] * num_layers  # ← NUOVO!
+        self.layer_net_list: list[Array1D] = [None] * num_layers 
 
     def update_weights(self, delta_list: list[Array2D], eta, lambda_l2=1e-4):
         """

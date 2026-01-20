@@ -19,29 +19,26 @@ x_test = x_test.to_numpy().astype(np.float64)
 d_test = d_test.to_numpy().astype(np.float64)
 
 
+n_patterns = len(x_train)
+
 # 2. CONFIGURAZIONE OTTIMALE PER MONK-1
 trainer = TrainerMonk(
-    input_size=x_train.shape[1],  
-    units_list=[4],          
-    n_outputs=1,
-    f_act_hidden=sigmaf,
+    input_size = x_train.shape[1],  
+    units_list = [4],          
+    n_outputs = 1,
+    f_act_hidden = sigmaf,
     f_act_output=sigmaf,    
     learning_rate=0.1,       # MONK disattivo
     use_decay=False,
     decay_factor=0.0,
     decay_step=0,
-    batch=False,              
-    epochs= 500,
-    early_stopping=False,
-    epsilon=0.01,
-    patience=20,
-    momentum=True,
-    alpha_mom=0.5,
+    mini_batch_size = 1,     # 1: ONLINE, N_PATTERNS: FULL BATCH
+    epochs= 200,
+    momentum=False,
+    alpha_mom=0.8,
     max_gradient_norm=5,
-    split=20,
     verbose=True,
-    validation=False,
-    lambdal2=0               
+    lambdal2=0              
 )
 
 print("Inizio Training...")

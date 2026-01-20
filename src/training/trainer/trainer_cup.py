@@ -18,13 +18,23 @@ class TrainerCup(Trainer):
         - Early Stopping su validation error
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, 
+                early_stopping: bool,
+                epsilon: float,
+                split: int,
+                validation: bool,
+                patience: int,**kwargs):
+        
         super().__init__(**kwargs)
+        self.early_stopping = early_stopping
+        self.epsilon = epsilon
+        self.patience = patience
+        self.validation = validation
 
-        self.tr_accuracy_history = []
-        self.ts_accuracy_history = []
 
 
+        self.vl_mee_history = []
+        self.vl_mse_history = []
 
     def fit(self, 
             tr_x: np.ndarray, 

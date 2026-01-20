@@ -35,28 +35,22 @@ class Trainer(ABC):
                  use_decay: bool,
                  decay_factor: float,
                  decay_step: int,
-                 batch: bool,
+                 #batch: bool,
+                 mini_batch_size: int,
                  epochs: int,
-                 early_stopping: bool,
-                 epsilon: float,
-                 patience: int,
                  momentum: bool,
                  alpha_mom: float,
                  max_gradient_norm: float,
-                 split: float,
                  verbose: bool = False,      # <- Importante da togliere nella grid search
-                 validation: bool = False,
                  lambdal2: float =1e-4):  # <- Importante da togliere nella grid search
 
 
         self.f_act_hidden = f_act_hidden
         self.f_act_output = f_act_output
         self.learning_rate = learning_rate
-        self.batch = batch
+        #self.batch = batch
+        self.mini_batch_size = mini_batch_size
         self.epochs = epochs
-        self.early_stopping = early_stopping
-        self.epsilon = epsilon
-        self.patience = patience
         self.momentum = momentum
         self.alpha_mom = alpha_mom
         self.use_decay = use_decay
@@ -64,8 +58,7 @@ class Trainer(ABC):
         self.decay_step = decay_step
         self.max_gradient_norm = max_gradient_norm
         self.verbose = verbose
-        self.validation = validation
-        self.lambdal2=lambdal2
+        self.lambdal2 = lambdal2
         self.epoch = 0
         self.old_deltas = None
 
@@ -80,11 +73,6 @@ class Trainer(ABC):
                 
         self.tr_mee_history = [] 
         self.tr_mse_history = []
-
-        self.vl_mee_history = []
-        self.vl_mse_history = []
-
-        self.accuracy_history = []
 
     @abstractmethod
     def fit(self, 
@@ -128,17 +116,27 @@ class Trainer(ABC):
         """
 
         indices = np.arange(n_patterns)
-        if not self.batch: np.random.shuffle(indices)
+        np.random.shuffle(indices)
 
         epoch_mee, epoch_mse, epoch_grad = 0.0, 0.0, 0.0
+        final_output = []
 
         # Crea una lista di batch quindi batch_deltas = [ [dwk], [dwj2], [dwj1]], 
         # in base a quanti sono le matrici dentro la lista dei pesi
-        if self.batch: 
-            batch_deltas = [np.zeros_like(w) for w in self.neuraln.weights_matrix_list]
-        final_output=[]
+        mb_size = self.mini_batch_size
+        if mb_size > n_patterns or mb_size < 1:
+            # Forza il full batch
+            mb_size = n_patterns
+
+        # Per gestire la logica ha bisogno di un accumulatore che ha size 1 se è online, size = n_patterns se è full
+        mb_deltas_accumulator = [np.zeros_like(w) for w in self.neuraln.weights_matrix_list]
+        patterns_in_current_mb = 0
+
+        if self.momentum and self.old_deltas is None:
+            self.old_deltas = [np.zeros_like(w) for w in self.neuraln.weights_matrix_list]
+        
         # Scorre tutti gli indici dividendo il comportamento in base a se è batch oppure online
-        for idx in indices:
+        for i, idx in enumerate(indices):
 
             x_pattern, d_pattern = input_matrix[idx], d_matrix[idx]
 
@@ -147,59 +145,73 @@ class Trainer(ABC):
                 self.f_act_hidden, 
                 self.f_act_output
             )
+
             final_output.append(layer_results[-1])
-
-
-            #epoch_mee += (np.sum((d_pattern - final_output) ** 2)) ** 0.5
-            #epoch_mse += (np.sum((d_pattern - final_output) ** 2))
 
             # L'asterisco serve per raggruppare in lista tutti i risultati
             # tranne, in questo caso, l'ultimo. Essendo specificato.
             # quindi deltas = [dwk, dwj2, dwj1], nel caso di una rete con 2 hidden layer
-
             deltas, grad_norm = compute_delta_all_layers_list(
-                d=d_pattern,
-                layer_results_list=layer_results,
-                layer_net_list=layer_nets,  # ← NUOVO parametro!
-                weights_matrix_list=self.neuraln.weights_matrix_list,
-                x_pattern=x_pattern,
-                f_act_hidden=self.f_act_hidden,
-                f_act_output=self.f_act_output,
-                old_deltas=self.old_deltas if self.momentum else None,
-                alpha_momentum=self.alpha_mom,
-                max_norm_gradient_for_clipping=self.max_gradient_norm
+                d = d_pattern,
+                layer_results_list = layer_results,
+                layer_net_list = layer_nets, 
+                weights_matrix_list = self.neuraln.weights_matrix_list,
+                x_pattern = x_pattern,
+                f_act_hidden = self.f_act_hidden,
+                f_act_output = self.f_act_output,
+                old_deltas = self.old_deltas if self.momentum else None,
+                alpha_momentum = self.alpha_mom,
+                max_norm_gradient_for_clipping = self.max_gradient_norm
             )
                         
             epoch_grad += grad_norm
 
-            #if epoch % 50 == 0:
-            #    print("VEDERE SE NECESSARIO CLIPPING: ", grad_norm, "EPOCA: ", epoch, "\n")
+            # Accumula i delta prima dell'aggiornamento dei pesi
+            for layer_idx in range(len(mb_deltas_accumulator)):
+                mb_deltas_accumulator[layer_idx] += deltas[layer_idx]
+                
+            patterns_in_current_mb += 1 
 
-            # CASO BATCH
-            if self.batch:
-                for i in range(len(batch_deltas)):
-                    batch_deltas[i] += deltas[i]
-            # CASO ONLINE
-            else:
-                self.neuraln.update_weights(deltas, eta=self.learning_rate, lambda_l2=self.lambdal2)
-                if self.momentum: self.old_deltas = deltas
+            # Controlla se raggiunge la size del mini_batch
+            mb_complete = (patterns_in_current_mb == mb_size)
+            end_of_dataset = (i == n_patterns - 1)
 
-        epoch_mee = mean_euclidean_error(final_output,d_matrix)
-        epoch_mse = mean_squared_error(final_output,d_matrix)
-        # Se fine epoca e se batch, aggiorna gli update weights 
-        if self.batch:
-            # Media dei gradienti
-            avg_deltas = [d_mat / n_patterns for d_mat in batch_deltas]
+            # Se ho raggiunto la size del minibatch o ho raggiunto la fine del dataset
+            if mb_complete or end_of_dataset:
 
-            if self.use_decay and self.epoch > 0 and self.epoch % self.decay_step == 0:
-                self.learning_rate *= self.decay_factor
+                # Media dei gradienti -> d / 1 se online
+                avg_deltas = [d / patterns_in_current_mb for d in mb_deltas_accumulator]
             
-            self.neuraln.update_weights(avg_deltas, eta = self.learning_rate,lambda_l2=self.lambdal2)
-            # Salva per momentum prossima epoca
-            if self.momentum: self.old_deltas = avg_deltas
+                # Se si usa il momentum, nel primo run_epoch somma 0
+                if self.momentum:
+
+                    for layer_idx in range(len(avg_deltas)):
+                        avg_deltas[layer_idx] += (self.alpha_mom * self.old_deltas[layer_idx])
+                
+                self.neuraln.update_weights(avg_deltas, eta = self.learning_rate, lambda_l2 = self.lambdal2)
+                
+                # Salva per momentum prossima epoca
+                if self.momentum: self.old_deltas = avg_deltas
+
+                mb_deltas_accumulator = [np.zeros_like(w) for w in self.neuraln.weights_matrix_list]
+                patterns_in_current_mb = 0 
+
+        # Se si usa il decadimento dinamico del learning rate
+        if self.use_decay and self.epoch > 0 and self.epoch % self.decay_step == 0:
+            self.learning_rate *= self.decay_factor        
+        
+        d_ordered = d_matrix[indices]
+
+        epoch_mee = mean_euclidean_error(final_output, d_ordered)
+        epoch_mse = mean_squared_error(final_output, d_ordered)
+
+        #epoch_mee = mean_euclidean_error(final_output, d_matrix)
+        #epoch_mse = mean_squared_error(final_output, d_matrix)
+
 
         return {
             'mee_tr': epoch_mee,
             'mse_tr': epoch_mse,
             'grad_norm': epoch_grad / n_patterns
         }
+    
