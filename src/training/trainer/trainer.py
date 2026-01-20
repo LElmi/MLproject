@@ -1,20 +1,14 @@
 # MAIN PROGETTO ML
 
 import numpy as np
+from abc import ABC, abstractmethod
 from typing import Callable, Dict
 from src.nn.nn import NN
 from src.training.trainer.forward.forward_pass import *
 from src.training.trainer.backward.backprop import compute_delta_all_layers_list
 from src.utils import *
-from src.utils.compute_accuracy import compute_accuracy
-# from src.training.trainer.stopper import Stopper
-from src.activationf.sigmoid import sigmaf
-from src.activationf.linear import linear
-#from src.utils.visualization import plot_accuracy
-# Tipi utili per chiarezza
 Array2D = np.ndarray
 Array1D = np.ndarray
-from abc import ABC, abstractmethod
 
 class Trainer(ABC):
     """
@@ -35,20 +29,23 @@ class Trainer(ABC):
                  use_decay: bool,
                  decay_factor: float,
                  decay_step: int,
-                 #batch: bool,
                  mini_batch_size: int,
                  epochs: int,
                  momentum: bool,
                  alpha_mom: float,
                  max_gradient_norm: float,
                  verbose: bool = False,      # <- Importante da togliere nella grid search
-                 lambdal2: float =1e-4):  # <- Importante da togliere nella grid search
+                 lambdal2: float = 1e-4,   
+                 validation: bool = False,
+                 early_stopping: bool = False,
+                 epsilon: float = 0,
+                 split: int = 0,
+                 patience: int = 0):  # <- Importante da togliere nella grid search
 
 
         self.f_act_hidden = f_act_hidden
         self.f_act_output = f_act_output
         self.learning_rate = learning_rate
-        #self.batch = batch
         self.mini_batch_size = mini_batch_size
         self.epochs = epochs
         self.momentum = momentum
@@ -61,6 +58,10 @@ class Trainer(ABC):
         self.lambdal2 = lambdal2
         self.epoch = 0
         self.old_deltas = None
+        self.early_stopping = early_stopping
+        self.epsilon = epsilon
+        self.patience = patience
+        self.validation = validation
 
         # Inizializza la rete neurale
         self.neuraln = NN(
@@ -141,9 +142,7 @@ class Trainer(ABC):
             x_pattern, d_pattern = input_matrix[idx], d_matrix[idx]
 
             layer_results, layer_nets = self.neuraln.forward_network(
-                x_pattern, 
-                self.f_act_hidden, 
-                self.f_act_output
+                x_pattern, self.f_act_hidden, self.f_act_output
             )
 
             final_output.append(layer_results[-1])
@@ -159,8 +158,6 @@ class Trainer(ABC):
                 x_pattern = x_pattern,
                 f_act_hidden = self.f_act_hidden,
                 f_act_output = self.f_act_output,
-                old_deltas = self.old_deltas if self.momentum else None,
-                alpha_momentum = self.alpha_mom,
                 max_norm_gradient_for_clipping = self.max_gradient_norm
             )
                         
@@ -172,26 +169,22 @@ class Trainer(ABC):
                 
             patterns_in_current_mb += 1 
 
-            # Controlla se raggiunge la size del mini_batch
-            mb_complete = (patterns_in_current_mb == mb_size)
-            end_of_dataset = (i == n_patterns - 1)
-
             # Se ho raggiunto la size del minibatch o ho raggiunto la fine del dataset
-            if mb_complete or end_of_dataset:
+            if patterns_in_current_mb == mb_size or i == n_patterns - 1:
 
                 # Media dei gradienti -> d / 1 se online
                 avg_deltas = [d / patterns_in_current_mb for d in mb_deltas_accumulator]
             
                 # Se si usa il momentum, nel primo run_epoch somma 0
                 if self.momentum:
-
                     for layer_idx in range(len(avg_deltas)):
                         avg_deltas[layer_idx] += (self.alpha_mom * self.old_deltas[layer_idx])
                 
                 self.neuraln.update_weights(avg_deltas, eta = self.learning_rate, lambda_l2 = self.lambdal2)
                 
                 # Salva per momentum prossima epoca
-                if self.momentum: self.old_deltas = avg_deltas
+                if self.momentum: 
+                    self.old_deltas = avg_deltas
 
                 mb_deltas_accumulator = [np.zeros_like(w) for w in self.neuraln.weights_matrix_list]
                 patterns_in_current_mb = 0 
@@ -201,13 +194,8 @@ class Trainer(ABC):
             self.learning_rate *= self.decay_factor        
         
         d_ordered = d_matrix[indices]
-
         epoch_mee = mean_euclidean_error(final_output, d_ordered)
         epoch_mse = mean_squared_error(final_output, d_ordered)
-
-        #epoch_mee = mean_euclidean_error(final_output, d_matrix)
-        #epoch_mse = mean_squared_error(final_output, d_matrix)
-
 
         return {
             'mee_tr': epoch_mee,

@@ -21,7 +21,7 @@ class TrainerMonk(Trainer):
         self.ts_accuracy_history = []
 
 
-    def fit(self, tr_x, tr_d, ts_x = None, ts_d = None, metric_mode='max'):
+    def fit(self, tr_x, tr_d, ts_x = None, ts_d = None):
         """
         Il fit del monk 
         """
@@ -87,55 +87,3 @@ class TrainerMonk(Trainer):
                 #self.vl_mee_history[-1] if self.validation else 0.0,
                 #self.vl_mse_history[-1] if self.validation else 0.0,
                 #final_vl_accuracy if self.validation else 0.0)
-
-
-
-"""Lascio qui nel caso volessimo inserire il validation nel monk
-
-
-    def _run_epoch_vl(self, vl_x, vl_d, metric_fn: Callable = None):
-        n_patterns = vl_x.shape[0]
-        #epoch_mee_vl, epoch_mse_vl = [], []
-        correct_predictions = 0
-        vl_final_output_array = []
-        
-        for pattern in range(n_patterns):
-
-            if metric_fn == compute_accuracy:
-
-                vl_layer_results, _ = self.neuraln.forward_network(vl_x[pattern],self.f_act_hidden, sigmaf)
-            else : 
-                vl_layer_results, _ = self.neuraln.forward_network(vl_x[pattern],self.f_act_hidden,linear)
-
-            vl_final_output = vl_layer_results[-1]
-
-            vl_final_output_array.append(vl_final_output.tolist())
-
-            # Calcola accuracy per monitoring
-            if metric_fn == compute_accuracy:
-                if compute_accuracy(vl_final_output, vl_d[pattern]):
-                    correct_predictions += 1
-                    
-        epoch_mee_vl = mean_euclidean_error(vl_final_output_array, vl_d)
-        epoch_mse_vl = mean_squared_error(vl_final_output_array, vl_d)
-        
-        # IMPORTANTE: calcola le medie
-        #avg_mee_vl = epoch_mee_vl / n_patterns
-        #avg_mse_vl = epoch_mse_vl / n_patterns
-        accuracy_vl = correct_predictions / n_patterns
-        if metric_fn is not compute_accuracy:
-            vl_score = epoch_mee_vl
-        else:
-        # Early stopping su MSE medio (non cumulativo!)
-            vl_score = epoch_mse_vl
-        
-        if self.verbose:
-            print(f"|||| CLASSIFICATION ACCURACY: {accuracy_vl:.4f} ({correct_predictions}/{n_patterns})")
-        
-        return {
-            'vl_score': vl_score,
-            'mee_vl': epoch_mee_vl,
-            'mse_vl': epoch_mse_vl,
-            'accuracy_vl': accuracy_vl
-        }
-"""

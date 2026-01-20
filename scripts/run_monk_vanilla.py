@@ -1,11 +1,6 @@
 from src.training.trainer.trainer_monk import TrainerMonk
 from src.activationf.sigmoid import sigmaf
 from src.utils import load_monks_data
-# Assicurati di importare la funzione one_hot definita sopra
-# from src.utils import one_hot_encoding_monk 
-import numpy as np
-
-
 import numpy as np
 
 
@@ -28,14 +23,14 @@ trainer = TrainerMonk(
     n_outputs = 1,
     f_act_hidden = sigmaf,
     f_act_output=sigmaf,    
-    learning_rate=0.1,       # MONK disattivo
+    learning_rate=0.3,       # MONK disattivo
     use_decay=False,
     decay_factor=0.0,
     decay_step=0,
-    mini_batch_size = 1,     # 1: ONLINE, N_PATTERNS: FULL BATCH
-    epochs= 200,
+    mini_batch_size = 25,     # 1: ONLINE, N_PATTERNS: FULL BATCH
+    epochs= 300,
     momentum=False,
-    alpha_mom=0.8,
+    alpha_mom=0.3,
     max_gradient_norm=5,
     verbose=True,
     lambdal2=0              

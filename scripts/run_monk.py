@@ -34,7 +34,7 @@ gs = GridSearch(
     use_decay = [False],
     decay_factor = [0.90] ,#if use_decay==True else [0.0],
     decay_step = [10],
-    batch = [False],
+    mini_batch_size = [[1], [30], [100], [len(tr_input)]],
     epochs=[500],
     early_stopping = [False],
     epsilon = [0.01],

@@ -74,9 +74,8 @@ def compute_delta_all_layers_list(
     x_pattern: Array1D,
     f_act_hidden: Callable,
     f_act_output: Callable,
-    old_deltas: Optional[List[Array2D]] = None,
     alpha_momentum: float = 0.0,
-    max_norm_gradient_for_clipping: float = 5
+    max_norm_gradient_for_clipping: float = 10
 ) -> tuple[List[Array2D], float]:
     """
     Backpropagation usando gli OUTPUT (post-attivazione) invece dei net.
@@ -111,12 +110,10 @@ def compute_delta_all_layers_list(
         deltas_list.append(delta)
         grad = compute_delta_weights(delta, prev_output)
         
-        if old_deltas is not None:
-            grad = grad + (alpha_momentum * old_deltas[i])
-        
         weight_gradients_list.append(grad)
 
     weight_gradients_list.reverse()
+    
     weight_gradients_list, grad_norm = gradient_norm_with_clipping(
         weight_gradients_list, max_norm_gradient_for_clipping
     )
