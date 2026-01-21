@@ -68,11 +68,62 @@ class GridSearch:
         
         return self.best_config, self.best_accuracy
 
-    def run_for_cup(self, x_train, d_train, vl_input, vl_targets):
-        """
-        Metodo che si chiama dall'esterno, questo è il cuore
-        del grid search
-        """
+    
+
+    
+    def run_for_cup_with_kfold(self, x_full, d_full, k_folds=4, x_test_internal = None):
+            """
+            Model Selection robusta: K-Fold su ogni configurazione.
+            """
+            print(f"🚀 Inizio Grid Search con K-Fold (K={k_folds})...")
+
+            all_results = [] # Lista che passeremo al plotter
+
+            for i, config_dict in enumerate(self.combinations):
+                
+                # Chiamiamo la funzione aggiornata sopra
+                # quindi ogni configurazione * k (k_folds)
+                stats = run_k_fold_cup(
+                    x_full=x_full,
+                    d_full=d_full,
+                    k_folds=k_folds,
+                    model_config=config_dict,
+                    verbose=False,
+                    x_test_internal = x_test_internal,
+                )
+                
+                mean_mse_val = stats['mean_mse']
+
+                print(f"Config {i+1}/{len(self.combinations)} | Mean MSE: {mean_mse_val:.5f}")
+
+                # Aggiorna il best model
+                if mean_mse_val < self.best_mse:
+                    self.best_mse = mean_mse_val
+                    self.best_config = config_dict
+                    print(f"   ⭐️ New Best Found!")
+                
+                # --- COSTRUZIONE DATI PER IL PLOT ---
+                result_entry = {
+                    'params': config_dict,
+                    'tr_mse': stats['mean_tr_history'], # Usiamo la curva media calcolata
+                    'vl_mse': stats['mean_vl_history']  # Usiamo la curva media calcolata
+                }
+                all_results.append(result_entry)
+
+
+
+            # Chiamata al plotter FUORI dal ciclo for
+            print("Generazione grafici...")
+            plot_grid_analysis(all_results, top_k_individual=5, relative_path="results/cup/grid_kfold")
+
+            return self.best_config, self.best_mse
+
+
+"""    def run_for_cup(self, x_train, d_train, vl_input, vl_targets):
+        
+        #Metodo che si chiama dall'esterno, questo è il cuore
+        #del grid search
+        
 
         all_results = []
 
@@ -110,52 +161,4 @@ class GridSearch:
                     relative_path="results/cup/grid_search"
                 )
 
-        return self.best_config, self.best_mse
-    
-
-    
-    def run_for_cup_with_kfold(self, x_full, d_full, k_folds=4, x_test_internal = None):
-            """
-            Model Selection robusta: K-Fold su ogni configurazione.
-            """
-            print(f"🚀 Inizio Grid Search con K-Fold (K={k_folds})...")
-
-            all_results = [] # Lista che passeremo al plotter
-
-            for i, config_dict in enumerate(self.combinations):
-                
-                # Chiamiamo la funzione aggiornata sopra
-                stats = run_k_fold_cup(
-                    x_full=x_full,
-                    d_full=d_full,
-                    k_folds=k_folds,
-                    model_config=config_dict,
-                    verbose=False,
-                    x_test_internal = x_test_internal,
-                )
-                
-                mean_mse_val = stats['mean_mse']
-
-                print(f"Config {i+1}/{len(self.combinations)} | Mean MSE: {mean_mse_val:.5f}")
-
-                # Aggiorna il best model
-                if mean_mse_val < self.best_mse:
-                    self.best_mse = mean_mse_val
-                    self.best_config = config_dict
-                    print(f"   ⭐️ New Best Found!")
-                
-                # --- COSTRUZIONE DATI PER IL PLOT ---
-                result_entry = {
-                    'params': config_dict,
-                    'tr_mse': stats['mean_tr_history'], # Usiamo la curva media calcolata
-                    'vl_mse': stats['mean_vl_history']  # Usiamo la curva media calcolata
-                }
-                all_results.append(result_entry)
-
-
-
-            # Chiamata al plotter FUORI dal ciclo for
-            print("Generazione grafici...")
-            plot_grid_analysis(all_results, top_k_individual=5, relative_path="results/cup/grid_kfold")
-
-            return self.best_config, self.best_mse
+        return self.best_config, self.best_mse"""

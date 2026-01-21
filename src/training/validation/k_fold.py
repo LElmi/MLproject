@@ -44,30 +44,33 @@ def run_k_fold_cup(x_full, d_full, k_folds, model_config, x_test_internal = None
             
         tr_input, tr_target, vl_input, vl_target = k_fold_split(x_full, d_full, k_folds, i)
         
-        trainer = TrainerCup(input_size=tr_input.shape[1], **model_config)
+        # Ad ogni k viene creato un nuovo trainer da 0
+        k_trainer = TrainerCup(input_size=tr_input.shape[1], **model_config)
         
-        # Fit restituisce i valori finali, ma noi accediamo alle liste interne per precisione
-        trainer.fit(
+        # Fit restituisce i valori finali per ogni k-fold, ma noi accediamo alle liste interne per precisione
+        k_trainer.fit(
             tr_x=tr_input, tr_d=tr_target, 
             vl_x=vl_input, vl_d=vl_target, 
             fold_id=i if verbose else None
         )
 
         if x_test_internal is not None:
-            result, _ = trainer.neuraln.forward_network(x_test_internal, trainer.f_act_hidden, trainer.f_act_output)
+            result, _ = k_trainer.neuraln.forward_network(x_test_internal, k_trainer.f_act_hidden, k_trainer.f_act_output)
 
             # result[-1] = vettore di outuput della i-esima k-fold
             test_internal_history_output.append(result[-1])
         
-
-        mse_vals.append(min(trainer.vl_mse_history))
-        mee_vals.append(min(trainer.vl_mee_history)) 
+        # Appende per ogni k-esima fold, il vl_mse e vl_mee raggiunto migliore
+        mse_vals.append(min(k_trainer.vl_mse_history))
+        mee_vals.append(min(k_trainer.vl_mee_history)) 
         
-        all_tr_mse_histories.append(trainer.tr_mse_history)
-        all_vl_mse_histories.append(trainer.vl_mse_history)
+        all_tr_mse_histories.append(k_trainer.tr_mse_history)
+        all_vl_mse_histories.append(k_trainer.vl_mse_history)
 
+    # Cerca tra tutti k training quello che è durato meno epoche
     min_len = min(len(h) for h in all_tr_mse_histories)
     
+
     tr_cut = [h[:min_len] for h in all_tr_mse_histories]
     vl_cut = [h[:min_len] for h in all_vl_mse_histories]
     

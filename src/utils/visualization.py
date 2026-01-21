@@ -8,105 +8,6 @@ PROJECT_ROOT = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "..")
 )
 
-def plot_grid_search_best_16(all_results, relative_path="results/grid_search/plots"):
-    """
-    Plotta i 16 migliori risultati della Grid Search in una griglia 4x4.
-    Solo MSE (Loss) su Training e Validation.
-    
-    Args:
-        all_results (list): Lista di dizionari. Ogni dizionario deve avere:
-                            {
-                                'params': dict (es. {'lr': 0.01, ...}),
-                                'tr_mse': list (history),
-                                'vl_mse': list (history)
-                            }
-        relative_path (str): Dove salvare il file.
-    """
-    dir_path = _ensure_dir(relative_path)
-    
-    # 1. Ordina i risultati in base al MINIMO MSE di validazione raggiunto
-    #    (Assumiamo che 'vl_mse' sia una lista, prendiamo il min)
-    sorted_results = sorted(all_results, key=lambda x: min(x['vl_mse']))
-    
-    # Prendiamo i primi 16 (o meno se ce ne sono meno)
-    top_n = min(16, len(sorted_results))
-    top_results = sorted_results[:top_n]
-    
-    # 2. Setup della figura 4x4
-    rows = 4
-    cols = 4
-    fig, axes = plt.subplots(rows, cols, figsize=(24, 18)) # Molto grande per leggibilità
-    axes = axes.flatten() # Appiattiamo per iterare facilmente
-
-    # Titolo globale
-    plt.suptitle(
-        f"Top {top_n} Configurations (Sorted by Validation MSE) - {datetime.now().strftime('%d/%m %H:%M')}", 
-        fontsize=20, 
-        fontweight='bold',
-        y=0.98
-    )
-
-    for i in range(rows * cols):
-        ax = axes[i]
-        
-        if i < top_n:
-            res = top_results[i]
-            tr_hist = res['tr_mse']
-            vl_hist = res['vl_mse']
-            params = res['params']
-            
-            epochs = np.arange(1, len(tr_hist) + 1)
-            
-            # Calcolo best epoch per il marker
-            best_vl_val = min(vl_hist)
-            best_epoch = np.argmin(vl_hist) + 1
-            
-            # --- PLOT TRAINING (Rosso) ---
-            ax.plot(epochs, tr_hist, color='red', label='Train', linewidth=1.5, alpha=0.8)
-            
-            # --- PLOT VALIDATION (Blu Tratteggiato) ---
-            ax.plot(epochs, vl_hist, color='blue', linestyle='--', label='Val', linewidth=1.5)
-            
-            # --- MARKER BEST (Stella Verde) ---
-            ax.scatter(best_epoch, best_vl_val, color='green', marker='*', s=80, zorder=5)
-
-            # --- FORMATTAZIONE ASSI ---
-            ax.set_yscale('log') # Fondamentale per MSE
-            ax.grid(True, linestyle='--', alpha=0.3)
-            
-            # Titolo del singolo subplot (Parametri formattati)
-            # Converte dizionario parametri in stringa breve: "lr=0.1, mom=0.5..."
-            param_str = ", ".join([f"{k}={v}" for k, v in params.items()])
-            
-            # Se la stringa è troppo lunga, la tronchiamo o andiamo a capo
-            if len(param_str) > 40:
-                param_str = param_str[:40] + "..."
-                
-            ax.set_title(f"#{i+1}: {param_str}\nBest VL: {best_vl_val:.5f}", fontsize=10, fontweight='bold')
-            
-            # Label solo sui bordi esterni per pulizia
-            if i >= 12: # Ultima riga
-                ax.set_xlabel("Epochs")
-            if i % 4 == 0: # Prima colonna
-                ax.set_ylabel("MSE (log)")
-                
-        else:
-            # Nascondi assi vuoti se ci sono meno di 16 risultati
-            ax.axis('off')
-
-    # Legenda unica in basso (opzionale, o per ogni plot se preferisci)
-    # Qui ne mettiamo una finta sul primo grafico per riferimento
-    axes[0].legend(loc='upper right', fontsize=8)
-
-    plt.tight_layout(rect=[0, 0.03, 1, 0.96]) # Lascia spazio per il titolo su
-    
-    # Salvataggio
-    fname = _generate_filename("GRID_Top16_MSE")
-    full_path = os.path.join(dir_path, fname)
-    plt.savefig(full_path, dpi=200) # dpi leggermente più basso per file non enormi
-    
-    print(f"✅ Grid Search Top 16 salvata in: {full_path}")
-
 def plot_grid_analysis(all_results, top_k_individual=5, relative_path="results/grid_search"):
     """
     Analizza i risultati della Grid Search e produce:
@@ -204,8 +105,8 @@ def plot_grid_analysis(all_results, top_k_individual=5, relative_path="results/g
         print(f"✅ [Collection] {top_k_individual} grafici dettagliati salvati in: {single_plots_dir}")
 
 
-def _draw_single_mse_plot(ax, result, title_prefix="", font_scale=1.0):
-    """Funzione helper per disegnare lo stile 'Monk' su un asse dato."""
+"""def _draw_single_mse_plot(ax, result, title_prefix="", font_scale=1.0):
+Funzione helper per disegnare lo stile 'Monk' su un asse dato.
     tr_hist = result['tr_mse']
     vl_hist = result['vl_mse']
     params = result['params']
@@ -235,7 +136,7 @@ def _draw_single_mse_plot(ax, result, title_prefix="", font_scale=1.0):
     ax.set_title(f"{title_prefix}\n{param_str}\nBest VL: {best_vl:.5f}", fontsize=9 * font_scale, fontweight='bold')
     
     # Legenda (piccola per non coprire)
-    ax.legend(fontsize=8 * font_scale, loc='upper right')
+    ax.legend(fontsize=8 * font_scale, loc='upper right')"""
 
 def _format_params(params):
     """Converte dizionario parametri in stringa leggibile: 'lr=0.01, mom=0.9'"""
@@ -484,7 +385,6 @@ def _generate_filename(prefix="plot"):
 
 
 
-
 def plot_monk(
     tr_mse_history: list,
     tr_accuracy_history: list,
@@ -627,4 +527,247 @@ def plot_monk(
     plt.savefig(full_path, dpi=300, bbox_inches='tight')
     
     print(f"✅ Grafico MONK salvato in: {full_path}")
+    plt.close()
+
+
+
+import matplotlib.pyplot as plt
+import numpy as np
+import os
+from datetime import datetime
+import textwrap  # Necessario per mandare a capo il testo
+
+def plot_grid_analysis(all_results, top_k_individual=5, relative_path="results/grid_search"):
+    """
+    Analizza i risultati della Grid Search e produce:
+    1. Un 'Summary Plot' 4x3 (Top 12) con le configurazioni scritte SOTTO ogni grafico.
+    2. Una collezione di plot individuali per i migliori 'top_k_individual' modelli.
+    """
+    
+    # 1. Setup Cartelle
+    base_dir = _ensure_dir(relative_path)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    
+    single_plots_dir = os.path.join(base_dir, f"details_{timestamp}")
+    if top_k_individual > 0:
+        os.makedirs(single_plots_dir, exist_ok=True)
+
+    # 2. Ordinamento: dal migliore al peggiore
+    sorted_results = sorted(all_results, key=lambda x: min(x['vl_mse']))
+    
+    # ==========================================
+    # PARTE A: SUMMARY GRID (Top 12 - 4x3)
+    # ==========================================
+    # Prendiamo solo i primi 12
+    top_12 = sorted_results[:12]
+    
+    # Impostiamo una griglia 4 righe x 3 colonne
+    rows, cols = 4, 3
+    
+    # Aumentiamo l'altezza della figura (24) per far stare comodamente il testo sotto
+    fig, axes = plt.subplots(rows, cols, figsize=(20, 24))
+    axes = axes.flatten()
+    
+    plt.suptitle(f"Top 12 Configurations (Sorted by Val MSE) - {timestamp}", fontsize=20, fontweight='bold', y=0.99)
+    
+    for i in range(rows * cols):
+        ax = axes[i]
+        
+        if i < len(top_12):
+            res = top_12[i]
+            
+            # Titolo Semplice (Solo Rank e Score)
+            best_vl = min(res['vl_mse'])
+            short_title = f"Rank #{i+1} | Best VL MSE: {best_vl:.5f}"
+            
+            # Disegna il grafico
+            _draw_single_mse_plot(ax, res, title_prefix=short_title, show_params_in_title=False)
+            
+            # --- SCRITTURA CONFIGURAZIONE SOTTO IL PLOT ---
+            # Formatta i parametri per andare a capo
+            params_text = _format_params_wrapped(res['params'])
+            
+            # Inserisce il testo sotto l'asse X
+            # (0.5 = centro orizzontale, -0.15 = sotto l'asse)
+            ax.text(
+                0.5, -0.18, 
+                params_text, 
+                transform=ax.transAxes, 
+                ha='center', va='top', 
+                fontsize=9, 
+                family='monospace',
+                bbox=dict(boxstyle="round,pad=0.5", fc="#f8f9fa", ec="#dee2e6", alpha=0.9)
+            )
+            
+            # Label asse Y solo sulla colonna di sinistra
+            if i % cols == 0: 
+                ax.set_ylabel("MSE (log)", fontsize=10)
+            
+        else:
+            ax.axis('off') # Nascondi riquadri vuoti se ce ne sono meno di 12
+
+    # Aggiusta la spaziatura: hspace alto per il testo, wspace per separare colonne
+    plt.subplots_adjust(top=0.95, bottom=0.05, hspace=0.65, wspace=0.2)
+    
+    summary_fname = f"GRID_Summary_Top12_{timestamp}.png"
+    summary_path = os.path.join(base_dir, summary_fname)
+    
+    # bbox_inches='tight' è fondamentale per non tagliare il testo fuori dai bordi
+    plt.savefig(summary_path, dpi=200, bbox_inches='tight')
+    print(f"✅ [Summary] Griglia 4x3 salvata in: {summary_path}")
+    plt.close()
+
+    # ==========================================
+    # PARTE B: COLLEZIONE INDIVIDUALE
+    # ==========================================
+    # (Codice invariato per i plot singoli)
+    if top_k_individual > 0:
+        print(f"   ...Generazione di {top_k_individual} grafici individuali...")
+        for i in range(min(top_k_individual, len(sorted_results))):
+            res = sorted_results[i]
+            fig_single, ax_single = plt.subplots(figsize=(10, 6))
+            
+            _draw_single_mse_plot(ax_single, res, title_prefix=f"Rank #{i+1}", show_params_in_title=True)
+            
+            # Info box extra
+            final_tr = res['tr_mse'][-1]
+            best_vl = min(res['vl_mse'])
+            info_text = (f"Final TR MSE: {final_tr:.5e}\nBest VL MSE: {best_vl:.5e}")
+            ax_single.text(0.5, -0.2, info_text, ha='center', va='top', transform=ax_single.transAxes,
+                           bbox=dict(boxstyle="round", facecolor="lightblue", alpha=0.3))
+            
+            ax_single.set_xlabel("Epoch")
+            ax_single.set_ylabel("MSE (log)")
+            
+            plt.tight_layout()
+            safe_rank = f"Rank_{i+1:02d}"
+            fname_single = f"{safe_rank}.png"
+            plt.savefig(os.path.join(single_plots_dir, fname_single), dpi=150)
+            plt.close()
+
+# --- HELPER FUNCTIONS ---
+
+def _format_params_wrapped(params):
+    """
+    Formatta i parametri pulendo le chiavi e andando a capo
+    per adattarsi allo spazio sotto il grafico.
+    """
+    # Lista di chiavi da ignorare per risparmiare spazio
+    ignored = ['verbose', 'validation', 'split', 'n_outputs', 'early_stopping', 'epsilon']
+    
+    items = []
+    for k, v in params.items():
+        if k in ignored: continue
+        
+        # Accorcia nomi lunghi delle chiavi
+        key = k.replace("mini_batch_size", "batch").replace("learning_rate", "lr") \
+               .replace("decay_factor", "d_fact").replace("decay_step", "d_step") \
+               .replace("momentum", "mom").replace("alpha_mom", "a_mom") \
+               .replace("lambdal2", "l2").replace("max_gradient_norm", "clip") \
+               .replace("units_list", "units")
+
+        # Formatta valore (es. nomi funzioni)
+        val = str(v)
+        if hasattr(v, '__name__'): val = v.__name__ # es: relu
+        if isinstance(v, list): val = str(v).replace(" ", "") # Rimuove spazi nelle liste [10,10]
+        
+        items.append(f"{key}={val}")
+
+    full_str = ", ".join(items)
+    # Usa textwrap per spezzare le righe ogni 50 caratteri circa
+    return "\n".join(textwrap.wrap(full_str, width=50))
+
+def _draw_single_mse_plot(ax, result, title_prefix="", font_scale=1.0, show_params_in_title=False):
+    """Disegna le curve. Se show_params_in_title=False, mette solo il titolo breve."""
+    tr_hist = result['tr_mse']
+    vl_hist = result['vl_mse']
+    epochs = np.arange(1, len(tr_hist) + 1)
+    
+    best_vl = min(vl_hist)
+    best_epoch = np.argmin(vl_hist) + 1
+    
+    ax.plot(epochs, tr_hist, color='red', label='Train', linewidth=1.5 * font_scale, alpha=0.8)
+    ax.plot(epochs, vl_hist, color='blue', linestyle='--', label='Val', linewidth=1.5 * font_scale, alpha=0.9)
+    
+    # Stella sul punto migliore
+    ax.scatter(best_epoch, best_vl, color='green', marker='*', s=120 * font_scale, zorder=5, edgecolors='black')
+    
+    ax.set_yscale('log')
+    ax.grid(True, linestyle='--', alpha=0.4)
+    
+    if show_params_in_title:
+        # Vecchio stile per plot singoli
+        title = f"{title_prefix}\n{result['params']}"
+    else:
+        # Nuovo stile pulito per la griglia
+        title = title_prefix
+        
+    ax.set_title(title, fontsize=11 * font_scale, fontweight='bold')
+    
+    # Rimuoviamo la legenda interna se occupa troppo spazio, o la facciamo piccola
+    ax.legend(fontsize=8 * font_scale, loc='upper right')
+
+def _ensure_dir(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
+    return path
+
+def plot_final_assessment(results, avg_target_range, k_folds_final, relative_path="results/cup/final_assessment"):
+    """
+    Plotta le curve medie di MSE e MEE fianco a fianco.
+    """
+    
+    # Crea directory
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")) 
+    full_path = os.path.join(base_dir, relative_path)
+    os.makedirs(full_path, exist_ok=True)
+    
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    
+    # Estrai MSE (presente di sicuro)
+    tr_mse = results.get('mean_tr_history', [])
+    vl_mse = results.get('mean_vl_history', [])
+    
+    # Estrai MEE (se l'hai implementato in run_k_fold_cup)
+    tr_mee = results.get('mean_tr_mee_history', [])
+    vl_mee = results.get('mean_vl_mee_history', [])
+    
+    epochs = np.arange(1, len(tr_mse) + 1)
+    
+    # Creiamo una figura con 2 colonne
+    fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+    
+    # --- PLOT 1: MSE ---
+    ax_mse = axes[0]
+    ax_mse.plot(epochs, tr_mse, label='Mean Train MSE', color='red')
+    ax_mse.plot(epochs, vl_mse, label='Mean Val MSE', color='blue', linestyle='--')
+    ax_mse.set_title(f"Mean MSE (K={k_folds_final})")
+    ax_mse.set_xlabel('Epochs')
+    ax_mse.set_ylabel('MSE (Normalized)')
+    ax_mse.set_yscale('log')
+    ax_mse.grid(True, linestyle='--', alpha=0.7)
+    ax_mse.legend()
+
+    # --- PLOT 2: MEE ---
+    ax_mee = axes[1]
+    if len(tr_mee) > 0:
+        ax_mee.plot(epochs, tr_mee, label='Mean Train MEE', color='orange')
+        ax_mee.plot(epochs, vl_mee, label='Mean Val MEE', color='green', linestyle='--')
+        ax_mee.set_title(f"Mean MEE (K={k_folds_final})")
+        ax_mee.set_xlabel('Epochs')
+        ax_mee.set_ylabel('MEE (Normalized)')
+        # MEE di solito è lineare, ma puoi mettere log se serve
+        ax_mee.grid(True, linestyle='--', alpha=0.7)
+        ax_mee.legend()
+    else:
+        ax_mee.text(0.5, 0.5, "MEE History not found in results", 
+                    ha='center', va='center', fontsize=12, color='gray')
+        print("⚠️ Attenzione: curve MEE non trovate in 'results'. Aggiorna run_k_fold_cup per raccoglierle.")
+
+    plt.tight_layout()
+    
+    filename = f"Final_KFold_MSE_MEE_{timestamp}.png"
+    save_path = os.path.join(full_path, filename)
+    plt.savefig(save_path, dpi=300)
+    print(f"\n✅ Grafico doppio (MSE + MEE) salvato in: {save_path}")
     plt.close()

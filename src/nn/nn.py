@@ -96,7 +96,7 @@ class NN:
             #weights = np.random.uniform(-limit, limit, (n_in, n_out))
 
             # Buono per ReLu
-            weights = np.random.randn(n_in, n_out)* np.sqrt(2.0 / n_in)*0.01
+            weights = np.random.randn(n_in, n_out)* np.sqrt(2.0 / n_in)
             weights = self._add_bias(weights)
 
             self.weights_matrix_list.append(weights)

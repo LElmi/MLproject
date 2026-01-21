@@ -1,84 +1,10 @@
 import numpy as np
-from src.training.trainer.trainer_cup import TrainerCup
-from src.training.validation.hold_out import hold_out_validation
 from config import cup_config
+from src.utils import * 
+from src.activationf import *
 from src.training.grid_search import GridSearch
-from src.activationf.relu import relu
-from src.activationf.leaky_relu import leaky_relu
-from src.activationf.linear import linear
-from src.utils import load_data, normalize_data
-from src.utils.compute_error import mean_euclidean_error_with_denorm, mean_squared_error_with_denorm
-
 from src.training.validation.k_fold import run_k_fold_cup
-
-
-def print_config(config, score=None, metric_name="MSE"):
-    """Stampa helper per visualizzare bene i risultati"""
-    print("\n" + "═"*60)
-    print(f" 🏆  BEST CONFIGURATION FOUND")
-    print("═"*60)
-    if score is not None:
-        print(f" 📊  BEST {metric_name:<20}: {score:.6f}")
-        print("─"*60)
-    for key in sorted(config.keys()):
-        val = config[key]
-        val_str = val.__name__ if hasattr(val, '__name__') else str(val)
-        print(f" • {key:<25} :  {val_str}")
-    print("═"*60 + "\n")
-
-# =============================================================================
-# 4. PLOTTING FINAL ASSESSMENT
-# =============================================================================
-# Poiché run_k_fold_cup restituisce le curve medie, possiamo plottarle direttamente.
-# Importiamo la funzione di plotting se non l'abbiamo già fatto, o ne creiamo una ad hoc.
-# Supponiamo di voler usare una funzione simile a plot_grid_analysis ma per un singolo risultato.
-
-import matplotlib.pyplot as plt
-import os
-from datetime import datetime
-
-def plot_final_assessment(results, avg_target_range, relative_path="results/cup/final_assessment"):
-    """
-    Plotta le curve medie di MSE e MEE (se disponibili) del Final Assessment K-Fold.
-    """
-    
-    # Crea directory se non esiste
-    # (Assumendo che tu abbia una funzione _ensure_dir o simile, altrimenti usa os.makedirs)
-    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")) # Adjust path as needed based on where run_cup.py is
-    full_path = os.path.join(base_dir, relative_path)
-    os.makedirs(full_path, exist_ok=True)
-    
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    
-    # Estrai le curve
-    tr_mse = results.get('mean_tr_history', [])
-    vl_mse = results.get('mean_vl_history', [])
-    
-    # Se hai anche le curve MEE nel dizionario results (dipende da come hai implementato run_k_fold_cup)
-    # Altrimenti plotta solo MSE. 
-    # Assumiamo per ora solo MSE dato il return di run_k_fold_cup standard.
-    
-    epochs = np.arange(1, len(tr_mse) + 1)
-    
-    plt.figure(figsize=(10, 6))
-    plt.plot(epochs, tr_mse, label='Mean Train MSE', color='red')
-    plt.plot(epochs, vl_mse, label='Mean Val MSE', color='blue', linestyle='--')
-    
-    # Denormalizzazione per label asse Y (opzionale, o plotta normalizzato)
-    # plt.ylabel('MSE (Normalized)')
-    
-    plt.title(f"Final K-Fold Assessment - Mean Learning Curves\n(K={cup_config.FOLDS})")
-    plt.xlabel('Epochs')
-    plt.ylabel('MSE')
-    plt.yscale('log') # MSE spesso si vede meglio in scala logaritmica
-    plt.grid(True, linestyle='--', alpha=0.7)
-    plt.legend()
-    
-    filename = f"Final_KFold_Curves_{timestamp}.png"
-    plt.savefig(os.path.join(full_path, filename), dpi=300)
-    print(f"\n✅ Grafico Final Assessment salvato in: {os.path.join(full_path, filename)}")
-    plt.close()
-
+from src.training.validation.hold_out import hold_out_validation
 
 
 # =============================================================================
@@ -109,37 +35,45 @@ print(f"Target Range medio (per denormalizzazione): {avg_target_range:.4f}")
 gs = GridSearch(
     units_list=[
       #[128, 64, 32], 
-      [100, 50]
+      [100, 50],
+      [200, 100],
+      [124, 64]
     ],
     n_outputs=[cup_config.N_OUTPUTS],
     f_act_hidden=[leaky_relu],
     f_act_output=[linear],
     
-    mini_batch_size=[32], 
+    mini_batch_size=[
+                    #32, 
+                    16
+                     ], 
     
     learning_rate=[
-                0.0001, 
-                #0.000025
+                #0.01, 
+                0.0025,
+                0.005
+                #0.001,
+                #0.0005
                    ], 
     
-    use_decay=[False],
+    use_decay=[True],
     decay_factor=[0.9],
-    decay_step=[25], 
+    decay_step=[10], 
     
-    momentum=[0.9],
+    momentum=[False],
     alpha_mom=[
         0.6, 
-        #0.2
+        #0.7
         ],
     
-    lambdal2=[0.0, 
+    lambdal2=[0.00001, 
               #0.001
               ], 
     
-    epochs=[3000], 
+    epochs=[5000], 
     early_stopping=[True],
-    epsilon=[1e-24],
-    patience=[50],
+    epsilon=[1e-20],
+    patience=[500],
     max_gradient_norm=[100],
     
     split=[cup_config.SPLIT],
@@ -148,7 +82,6 @@ gs = GridSearch(
 )
 
 print("\n🚀 Avvio Grid Search con K-Fold interno (Model Selection)...")
-
 best_config, best_score_gs = gs.run_for_cup_with_kfold(x_i, d, k_folds=3)
 
 print_config(best_config, best_score_gs, "Mean MSE (Grid)")
@@ -161,12 +94,15 @@ print("\n" + "█"*60)
 print(f"🔎 AVVIO FINAL ASSESSMENT (Intense K-Fold)")
 print("█"*60)
 
+# Cambio configurazione per Train intenso
 final_config = best_config.copy()
 final_config['epochs'] = 5000      
-final_config['patience'] = 50    
+final_config['patience'] = 500   
+final_config['epsilon'] = 1e-20
 final_config['verbose'] = False   
 
-k_folds_final = cup_config.FOLDS 
+# Numero di K-FOLD
+k_folds_final = 3
 
 final_results = run_k_fold_cup(
     x_full=x_i,
@@ -177,32 +113,54 @@ final_results = run_k_fold_cup(
     verbose=True
 )
 
-"""final_result_test_internal = np.asarray(final_results["test_internal_history_output"])
+# =============================================================================
+# FINAL TEST INTERNAL
+# =============================================================================
 
-print("\n\n\[DEBUG] final_results", final_result_test_internal.shape)
-print(d_test.shape)
+if "test_internal_history_output" in final_results:
+    final_result_test_internal = np.asarray(final_results["test_internal_history_output"])
+    
+    print(f"\n[DEBUG] Shape Test Results: {final_result_test_internal.shape} (K_Folds, N_Test, Outputs)")
+    
+    mee_test_list = []
+    mse_test_list = []
 
-mee_test = []
-mse_test = []
+    # Iteriamo su ogni fold (i)
+    # d_test è il target del test set (normalizzato)
+    for i in range(final_result_test_internal.shape[0]):
+        
+        # Calcolo MSE reale
+        mse_val = mean_squared_error_with_denorm(
+            outputs=final_result_test_internal[i], 
+            targets=d_test, 
+            d_min=d_min, 
+            d_max=d_max
+        )
+        mse_test_list.append(mse_val)
 
-# d_test: 75x4, final_result: 3 x 4 
-for i in range(final_result_test_internal.shape[0]):
+        # Calcolo MEE reale
+        mee_val = mean_euclidean_error_with_denorm(
+            outputs=final_result_test_internal[i], 
+            targets=d_test, 
+            d_min=d_min, 
+            d_max=d_max
+        )
+        mee_test_list.append(mee_val)
 
-    mse_test.append(mean_squared_error_with_denorm(final_result_test_internal[i], d_test, x_min, x_max, d_max, d_min))
-    mee_test.append(mean_euclidean_error_with_denorm(final_result_test_internal[i], d_test, x_min, x_max, d_max, d_min))
-
-print("||🙏 MEE_TEST_INTERNAL: ", mee_test)
-print("||🙏 MSE_TEST_INTERNAL: ", mse_test)"""
-
-
+    print("\n" + "═"*60)
+    print("🌍 BLIND TEST INTERNO (Denormalizzato)")
+    print("═"*60)
+    print(f"Mean MSE (Real): {np.mean(mse_test_list):.5f} (± {np.std(mse_test_list):.5f})")
+    print(f"Mean MEE (Real): {np.mean(mee_test_list):.5f} (± {np.std(mee_test_list):.5f})")
+    print("═"*60)
 
 #print("||| ✅ Final test internal result array mse: ", final_results["test_internal_history_mse"])
 
-plot_final_assessment(final_results, avg_target_range)
+plot_final_assessment(final_results, avg_target_range, k_folds_final)
 
 # =============================================================================
 # REPORT
-# ================================
+# =============================================================================
 mean_mse_norm = final_results['mean_mse']
 mean_mee_norm = final_results['mean_mee']
 

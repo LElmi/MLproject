@@ -8,3 +8,4 @@ from .visualization import *
 from .load_data import *
 from .compute_error import * 
 from .compute_accuracy import *
+from .print_config import *
