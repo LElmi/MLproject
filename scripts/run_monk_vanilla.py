@@ -1,6 +1,7 @@
 from src.activationf.leaky_relu import leaky_relu
 from src.training.trainer.trainer import Trainer
 from src.activationf.sigmoid import sigmaf
+from src.activationf.tanh import tanh
 from src.utils import load_monks_data
 from src.training.validation import Stratified_Split
 import matplotlib.pyplot as plt
@@ -14,26 +15,26 @@ print(f"Shape input dopo encoding: {x_i.shape}")
 
 trainer = Trainer(
     input_size=x_i.shape[1],
-    units_list=[8],
+    units_list=[4],
     n_outputs=1,
     f_act_hidden=leaky_relu,
     f_act_output=sigmaf,
-    learning_rate=0.05,
+    learning_rate=0.1,
     use_decay=False,
-    decay_factor=0.0,
-    decay_step=0,
+    decay_factor=95.0,
+    decay_step=5,
     batch=False,
-    epochs=5000,
+    epochs=500,
     early_stopping=False,
     epsilon=0.01,
     patience=20,
     momentum=True,
-    alpha_mom=0.2,
-    max_gradient_norm=100,
+    alpha_mom=0.5,
+    max_gradient_norm=10,
     split=20,
     verbose=False,
     validation=False,
-    lambdal2=0.00001
+    lambdal2=0.0
 )
 x_i_tr, d_tr, x_i_vl, d_vl = Stratified_Split.hold_out_validation_stratified(
     x_i, d, 20, random_state=None

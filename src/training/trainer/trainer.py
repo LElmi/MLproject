@@ -276,11 +276,12 @@ class Trainer:
         epoch_grad = 0.0
         final_output = []
 #triggera online solo se pattern_in_batch==pattern totali
-        batch_percentage = getattr(self, "batch_percentage", 0.1)
-        #patterns_in_batch = max(1, int(round(n_patterns * batch_percentage)))
-        patterns_in_batch=64
+        batch_percentage = getattr(self, "batch_percentage", 1.0)
+        patterns_in_batch = max(1, int(round(n_patterns * batch_percentage)))
+        #patterns_in_batch=64
         # ---------------------------------batch
         if self.batch:
+#            print("1")
             batch_deltas = [np.zeros_like(w) for w in self.neuraln.weights_matrix_list]
 
             for idx in indices:
@@ -323,6 +324,7 @@ class Trainer:
 
         # ----------------------minibatch
         elif patterns_in_batch < n_patterns:
+#            print("2")
             all_minibatches = [
                 indices[i:i + patterns_in_batch]
                 for i in range(0, n_patterns, patterns_in_batch)
@@ -376,6 +378,7 @@ class Trainer:
 
         #---------------------------------Online
         else:
+#            print("3")
             for idx in indices:
                 x_pattern = input_matrix[idx]
                 d_pattern = d_matrix[idx]
@@ -420,11 +423,6 @@ class Trainer:
             "grad": epoch_grad
         }
 
-        return {
-            'mee_tr': epoch_mee,
-            'mse_tr': epoch_mse,
-            'grad_norm': epoch_grad / n_patterns
-        }
 
     def _run_epoch_vl(self, vl_x, vl_d, metric_fn: Callable = None):
         n_patterns = vl_x.shape[0]
