@@ -1,7 +1,7 @@
 import itertools
 from src.training.trainer.trainer_cup import TrainerCup
 from src.training.trainer.trainer_monk import TrainerMonk
-from src.utils.visualization import plot_grid_analysis
+from src.utils.visualization import *
 from src.training.validation.k_fold import run_k_fold_cup
 
 
@@ -43,29 +43,50 @@ class GridSearch:
         return all_configs
     
 
-    def run_for_monk(self, x_train, d_train,vl_input, vl_targets, metric_fn):
+    def run_for_monk_holdout(self, x_train, d_train,vl_input, vl_targets):
         """
         Da completare...
 
         Metodo che si chiama dall'esterno, questo è il cuore 
         del grid search, 
         """
+
+        self.best_accuracy = -1.0
+        all_results_data = []
+        
         for i, config_dict in enumerate(self.combinations):
             # Qui istanziamo il Trainer usando lo spacchettamento del dizionario **
             trainer = TrainerMonk(
                 input_size=x_train.shape[1],
                 **config_dict 
             )
-            
-            # Per ogni combinazione chiama il fit
-            current_mse_tr = trainer.fit(x_train, d_train, vl_input, vl_targets,metric_fn)
 
-            print(f"Config {i+1}/{len(self.combinations)} | MSE in training: {current_mse_tr:.4f}")
-            #print(f"Config {i + 1}/{len(self.combinations)} | Accuracy in Validation: {accuracy:.4f}")
-            #if accuracy > self.best_accuracy:
-            #    self.best_accuracy = accuracy
-            #    self.best_config = config_dict
+            final_mse, val_accuracy = trainer.fit(
+                tr_x = x_train,
+                tr_d = d_train,
+                vl_x = vl_input,
+                vl_d = vl_targets
+            )
+            
+            print(f"Config {i+1}/{len(self.combinations)} | Val Accuracy: {val_accuracy:.4f} | Tr MSE: {final_mse:.4f}")
+
+            # Logica di massimizzazione dell'accuracy
+            if val_accuracy > self.best_accuracy:
+                self.best_accuracy = val_accuracy
+                self.best_config = config_dict
+                print("   ⭐️ New Best Found!")
+
+            all_results_data.append({
+            'params': config_dict,
+            'tr_mse': trainer.tr_mse_history,
+            # 'vl_mse': trainer.vl_mse_history, # Se la tracci
+            'tr_accuracy': trainer.tr_accuracy_history,
+            'vl_accuracy': trainer.vl_accuracy_history
+            })
         
+
+        plot_grid_search_analysis_monk(all_results_data)
+
         return self.best_config, self.best_accuracy
 
     
@@ -114,7 +135,7 @@ class GridSearch:
 
             # Chiamata al plotter FUORI dal ciclo for
             print("Generazione grafici...")
-            plot_grid_analysis(all_results, top_k_individual=5, relative_path="results/cup/grid_kfold")
+            plot_grid_analysis_cup(all_results, top_k_individual=5, relative_path="results/cup/grid_kfold")
 
             return self.best_config, self.best_mse
 

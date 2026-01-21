@@ -1,23 +1,18 @@
-from src.training.trainer.trainer import Trainer
-from src.training.grid_search import GridSearch
 import numpy as np
-from src.training.validation.stratified_split import hold_out_validation_stratified
-from src.activationf.leaky_relu import leaky_relu
-from src.activationf.relu import relu
-from src.activationf.sigmoid import sigmaf
-from src.utils.compute_accuracy import compute_accuracy
 from config import monk_config
+from src.training.trainer.trainer_monk import TrainerMonk
+from src.training.grid_search import GridSearch
+from src.activationf import *
 from src.utils import *
-from src.training.validation.k_fold import k_fold
+from src.training.validation.stratified_split import hold_out_validation_stratified
 
 # Carica dati
-x_i, d = load_monks_data(monk_config.PATH_DT)
+x_i, d = load_monks_data("data/monk/train_data/monks-1.train")
 x_i = x_i.to_numpy().astype(np.float64)
 d = d.to_numpy().astype(np.float64)
 
-if monk_config.RUN_HOLD_OUT_VALIDATION:
 
-    tr_input, tr_target, vl_input, vl_target = hold_out_validation_stratified(x_i, d, monk_config.SPLIT)
+tr_input, tr_target, vl_input, vl_target = hold_out_validation_stratified(x_i, d, monk_config.SPLIT)
 
 
 # GridSearch è una classe che usa **kwargs come argomento, ergo, 
@@ -26,73 +21,114 @@ if monk_config.RUN_HOLD_OUT_VALIDATION:
 # apportano modifiche lì!
 
 gs = GridSearch(
-    units_listm = [[2], [4]],
-    n_outputs = [monk_config.N_OUTPUTS],
-    f_act_hidden = [sigmaf],
-    f_act_output = [sigmaf],
-    learning_rate = [0.05],
-    use_decay = [False],
-    decay_factor = [0.90] ,#if use_decay==True else [0.0],
-    decay_step = [10],
-    mini_batch_size = [[1], [30], [100], [len(tr_input)]],
-    epochs=[500],
-    early_stopping = [False],
-    epsilon = [0.01],
-    patience = [monk_config.PATIENCE],
-    momentum = [monk_config.MOMENTUM],
-    alpha_mom = [[0.9]],
-    max_gradient_norm = [20],
-    split = [monk_config.SPLIT],
-    verbose = [True],
-    validation = [False],
-    lambdal2 = [0]
 
+    units_list = [[3], [4]],  
+    n_outputs = [monk_config.N_OUTPUTS],
+    f_act_hidden = [sigmaf], 
+    f_act_output = [sigmaf],
+    
+    learning_rate = [
+            #0.22, 
+            0.2,
+            0.17,
+            #0.16
+            ], 
+    
+    use_decay = [False],     
+    decay_factor = [0.9],
+    decay_step = [10],
+    
+    mini_batch_size = [
+        #len(tr_input),
+        #10,
+        35,
+        60           
+    ],
+    
+    epochs=[500],
+    
+    # --- EARLY STOPPING (Fondamentale) ---
+    early_stopping = [True],
+    patience = [50],       # Stop se accuracy non migliora per 20 epoche
+    epsilon = [0.00001],
+    
+    momentum = [True],  
+    alpha_mom = [
+                0.9,
+                #0.8,
+                #0.75,
+                0.7,
+                #0.5
+                ],
+    max_gradient_norm = [10],
+    
+    split = [monk_config.SPLIT],
+    verbose = [False],    
+    validation = [True],  
+    lambdal2 = [
+        #0.00001, 
+        0.0001,
+        #0.00001
+        ]
 )
 
-best_config, best_accuracy_GS = gs.run_for_monk(tr_input, tr_target, vl_input, vl_target, compute_accuracy)
+print("\n🚀 Avvio Grid Search...")
+best_config, best_acc_gs = gs.run_for_monk_holdout(tr_input, tr_target, vl_input, vl_target)
 
-print("\n\nBest Config Result: ", best_config)
-number_of_patterns_in_one_fold = round(x_i.shape[0]/monk_config.FOLDS)
-mee_arr = np.zeros(monk_config.FOLDS)
-best_mee = 999.
-best_accuracy=0.
-accuracy_allmodels=np.zeros(monk_config.FOLDS)
+print("\n" + "═"*60)
+print(f"🏆 MIGLIOR CONFIGURAZIONE TROVATA (Val Acc: {best_acc_gs:.2%})")
+print("═"*60)
+for k, v in best_config.items():
+    print(f" • {k:<20}: {v}")
+print("═"*60)
 
-trainers=[]
+# =============================================================================
+# 3. FINAL RETRAINING & TEST (Assessment)
+# =============================================================================
+# Ora che abbiamo i parametri migliori, riaddestriamo su TUTTO il training set (tr + vl)
+# e testiamo sul file di test separato (monks-X.test) se esiste.
 
-for validation_fold in range(monk_config.FOLDS):
+print("\n🔁 Retraining finale sul dataset completo...")
 
-    print("\Running fold ",validation_fold,"...\n")
-
-    tr_input, tr_target, vl_input, vl_targets = k_fold(x_i, d, monk_config.FOLDS, validation_fold)
-    
-    if (monk_config.EARLY_STOPPING == True):
-        trainers.append(
-
-            Trainer(input_size = tr_input.shape[1], **best_config)
-        )
-        mee_tr, mse_tr, mee_vl, mse_vl, accuracy = trainers[validation_fold].fit_k_fold(tr_input, tr_target,validation_fold,
-                                                    vl_input, vl_targets, compute_accuracy)
-        mee_arr[validation_fold] = mee_vl
-        #print("\n \n \n",accuracy_history)
-        accuracy_allmodels[validation_fold] = accuracy
-
-        for i in range(mee_arr.shape[0]):
-
-            if (best_accuracy < accuracy):
-
-                best_mee = mee_arr[i]
-                best_accuracy = accuracy
-                #best_model = trainer
-
-    mean_accuracy=np.mean(accuracy_allmodels)
-
-print(" 🏆🚀 BEST CONFIG IN GRID SEARCH: \n", best_config, "\n\n\n", "BEST ACCURACY: ", best_accuracy_GS)
-
-print("\n\n\n\nMiglior modello trovato tra quelli analizzati con la K fold cross validation con ",
-      monk_config.FOLDS," folds: \nmiglior mee=",
-      best_mee, "\n con accuracy=",best_accuracy*100.,
-      "%", "\n e accuracy media=", mean_accuracy*100,
-      "%\n\n\n",accuracy_allmodels)
+# Carica il Test Set (se definito in config)
+# Assumiamo tu abbia definito PATH_TS in monk_config
+try:
+    x_test, d_test = load_monks_data("data/monk/test_data/monks-1.test")
+    x_test = x_test.to_numpy().astype(np.float64)
+    d_test = d_test.to_numpy().astype(np.float64)
+    has_test_set = True
+    print(f"Test Set caricato: {x_test.shape[0]} patterns")
+except:
+    print("⚠️ Nessun Test Set trovato (PATH_TS). Uso la validazione come stima finale.")
+    has_test_set = False
 
 
+# Tolgo l'early 
+final_config = best_config.copy()
+final_config['early_stopping'] = False      
+
+# Creiamo il trainer finale
+final_trainer = TrainerMonk(input_size=x_test.shape[1],**best_config)
+# Forziamo verbose=True per vedere il training
+final_trainer.verbose = True 
+
+# Addestriamo su x_i (tutto il dataset di train originale)
+# Passiamo x_test come validazione solo per vedere i grafici, ma NON per fermarci (early stopping)
+# Oppure usiamo early stopping su una piccola porzione se necessario.
+# Per il Monk standard, spesso si fa training a epoche fisse o fino a MSE < tot.
+mse_final, acc_final_tr = final_trainer.fit(x_i, d, 
+                                            vl_x=x_test if has_test_set else None, 
+                                            vl_d=d_test if has_test_set else None)
+
+print("\n" + "█"*60)
+print("📄 REPORT FINALE MONK")
+print("█"*60)
+print(f"MSE Finale Training: {mse_final:.5f}")
+print(f"Accuracy Training:   {acc_final_tr:.2%}")
+
+if has_test_set:
+    # Calcoliamo Accuracy sul Test Set
+    acc_test = final_trainer._compute_accuracy_internal(x_test, d_test)
+    print(f"Accuracy TEST SET:   {acc_test:.2%}")
+
+print("█"*60)

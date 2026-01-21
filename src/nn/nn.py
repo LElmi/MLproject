@@ -92,12 +92,14 @@ class NN:
             n_out = layer_sizes[i+1] 
 
             # Buono per SIGMOIDE
-            #limit = np.sqrt(6 / (n_in + n_out))
-            #weights = np.random.uniform(-limit, limit, (n_in, n_out))
+            limit = np.sqrt(6 / (n_in + n_out))
+            weights = np.random.uniform(-limit, limit, (n_in, n_out))
+            weights = self._add_bias(weights)
+
 
             # Buono per ReLu
-            weights = np.random.randn(n_in, n_out)* np.sqrt(2.0 / n_in)
-            weights = self._add_bias(weights)
+            #weights = np.random.randn(n_in, n_out)* np.sqrt(2.0 / n_in)
+            #weights = self._add_bias(weights)
 
             self.weights_matrix_list.append(weights)
 
