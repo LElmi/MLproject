@@ -74,7 +74,8 @@ gs = GridSearch(
                 #0.7
                 ],
             
-            lambdal2=[0.00001, 
+            lambdal2=[
+                    0.00001, 
                     #0.001
                     ], 
     

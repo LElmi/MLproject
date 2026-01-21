@@ -39,7 +39,7 @@ gs = GridSearch(
     decay_step = [10],
     
     mini_batch_size = [
-        #len(tr_input),
+        len(tr_input),
         #10,
         35,
         60           
@@ -67,7 +67,8 @@ gs = GridSearch(
     validation = [True],  
     lambdal2 = [
         #0.00001, 
-        0.0001,
+        #0.0001,
+        0
         #0.00001
         ]
 )
