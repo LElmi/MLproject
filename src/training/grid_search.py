@@ -17,6 +17,7 @@ class GridSearch:
         # Risultato da restituire con un getter
         self.best_config = None
         self.best_mse = float('inf')
+        self.best_epoch = None
         # self.best_accuracy = 0
 
         self.combinations = self._generate_combinations()
@@ -122,6 +123,7 @@ class GridSearch:
                 if mean_mse_val < self.best_mse:
                     self.best_mse = mean_mse_val
                     self.best_config = config_dict
+                    self.best_epoch = stats["epoch_reached"]
                     print(f"   ⭐️ New Best Found!")
                 
                 # --- COSTRUZIONE DATI PER IL PLOT ---
@@ -138,7 +140,7 @@ class GridSearch:
             print("Generazione grafici...")
             plot_grid_analysis_cup(all_results, top_k_individual=5, relative_path="results/cup/grid_kfold")
 
-            return self.best_config, self.best_mse
+            return self.best_config, self.best_mse, self.best_epoch
 
 
 """    def run_for_cup(self, x_train, d_train, vl_input, vl_targets):

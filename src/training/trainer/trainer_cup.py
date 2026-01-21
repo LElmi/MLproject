@@ -24,6 +24,7 @@ class TrainerCup(Trainer):
 
         self.vl_mee_history = []
         self.vl_mse_history = []
+        self.trigger_epoch = 0 
 
     def fit(self, 
             tr_x: np.ndarray, 
@@ -69,6 +70,7 @@ class TrainerCup(Trainer):
                 
                 # Se should stop è vero allora l'Early Stopper ha superato la patience
                 if should_stop(vl_score, self.neuraln.weights_matrix_list):
+                    self.trigger_epoch = epoch
                     break
                     
 

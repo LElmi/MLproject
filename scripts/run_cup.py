@@ -4,7 +4,6 @@ from src.utils import *
 from src.activationf import *
 from src.training.grid_search import GridSearch
 from src.training.trainer.trainer_cup import TrainerCup
-from src.training.validation.k_fold import run_k_fold_cup
 from src.training.validation.hold_out import hold_out_validation
 
 
@@ -37,9 +36,10 @@ gs = GridSearch(
             units_list=[
             #[128, 64, 32], 
             #[400, 200],
-            [1200, 600]
+            #[1200, 600]
             #[200, 100],
             #[256, 128, 64]
+            #[40,20]
             ],
 
             n_outputs=[cup_config.N_OUTPUTS],
@@ -72,8 +72,8 @@ gs = GridSearch(
             momentum=[True],
             alpha_mom=[
                 0.0,
-                0.5,
-                0.9, 
+                #0.5,
+                #0.9, 
                 #0.7
                 ],
             
@@ -94,7 +94,7 @@ gs = GridSearch(
 )
 
 print("\n🚀 Avvio Grid Search con K-Fold interno (Model Selection)...")
-best_config, best_score_gs = gs.run_for_cup_with_kfold(x_i, d, k_folds=3)
+best_config, best_score_gs, best_epoch = gs.run_for_cup_with_kfold(x_i, d, k_folds=3)
 
 print_config(best_config, best_score_gs, "Mean MSE (Grid)")
 
@@ -113,21 +113,39 @@ print("█"*60)
 
 # Cambio configurazione per Train intenso
 final_config = best_config.copy()
-final_config['epochs'] = 5000  # Deve essere la migliore
-final_config['patience'] = 500   
-final_config['epsilon'] = 1e-20
-final_config['verbose'] = False   
+final_config['epochs'] = best_epoch  # Deve essere la migliore
+final_config['early_stopping'] = False
+final_config['validation'] = False
+final_config['verbose'] = True   
 
 trainer_final = TrainerCup(
     input_size = x_i.shape[1],
-    **best_config
+    **final_config
 )
 
 trainer_final.fit(x_i, d)
-layer_results = trainer_final.neuraln.forward_network(x_i_test, trainer_final.f_act_hidden, trainer_final.f_act_output)
-final_output_on_test_set = layer_results[-1]
 
-mee_final_test_denorm = mean_euclidean_error_test(final_output_on_test_set, d_test, x_max, x_min, d_max, d_min)
+final_output_list = []
+for pattern in x_i_test:
+    # Forward pass per singolo pattern
+    layer_results, _ = trainer_final.neuraln.forward_network(
+        pattern, 
+        trainer_final.f_act_hidden, 
+        trainer_final.f_act_output
+    )
+    final_output_list.append(layer_results[-1])
+
+final_out = np.array(final_output_list)
+
+#final_out = np.asarray(final_output_on_test_set)
+
+mee_final_test_denorm = mean_euclidean_error_test(
+    final_out,    # Output rete
+    d_test,       # Target rete
+    d_max, d_min, # Range per denormalizzare Output (CORRETTO)
+    d_max, d_min  # Range per denormalizzare Target
+)
+
 #mse_final_test_denorm = mean_euclidean_error_test(final_output_on_test_set, d_test, x_max, x_min, d_max, d_min)
 
 print("\n\n|||| 🎬 MEE FINAL: ", mee_final_test_denorm, "|||\n\n")

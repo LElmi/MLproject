@@ -88,7 +88,9 @@ def run_k_fold_cup(x_full, d_full, k_folds, model_config, x_test_internal = None
             "mean_tr_history": mean_tr_curve,
             "mean_vl_history": mean_vl_curve,
 
-            "test_internal_history_output" : test_internal_history_output
+            "test_internal_history_output" : test_internal_history_output,
+
+            "epoch_reached" : k_trainer.trigger_epoch
 
         }
     else:
@@ -100,6 +102,9 @@ def run_k_fold_cup(x_full, d_full, k_folds, model_config, x_test_internal = None
             "std_mee": np.std(mee_vals),
             
             "mean_tr_history": mean_tr_curve,
-            "mean_vl_history": mean_vl_curve
+            "mean_vl_history": mean_vl_curve,
+
+            "epoch_reached" : k_trainer.trigger_epoch
+
 
         }
