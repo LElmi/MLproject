@@ -112,8 +112,7 @@ class Trainer(ABC):
         """
         Metodo che nasce con l'esigenza di portare un po' di logica fuori dal train,
         runna una epoca, restitutuendo le informazioni sull'errore.
-        Questo metodo gestisce la divisione della logica in base all'esplorazione tramite batch o online,
-
+        Questo metodo gestisce la divisione della logica in base all'esplorazione tramite batch o online
         """
 
         indices = np.arange(n_patterns)

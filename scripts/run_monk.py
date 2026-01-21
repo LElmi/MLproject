@@ -22,15 +22,19 @@ tr_input, tr_target, vl_input, vl_target = hold_out_validation_stratified(x_i, d
 
 gs = GridSearch(
 
-    units_list = [[3], [4]],  
+    units_list = [
+        [3], #best
+        [2]
+        ],  
     n_outputs = [monk_config.N_OUTPUTS],
     f_act_hidden = [sigmaf], 
     f_act_output = [sigmaf],
     
     learning_rate = [
-            #0.22, 
-            0.2,
-            0.17,
+            0.25, 
+            0.2,    # best
+            #0.15,
+            #0.17,
             #0.16
             ], 
     
@@ -41,8 +45,8 @@ gs = GridSearch(
     mini_batch_size = [
         len(tr_input),
         #10,
-        35,
-        60           
+        #35,    # best
+        50           
     ],
     
     epochs=[500],
@@ -54,10 +58,11 @@ gs = GridSearch(
     
     momentum = [True],  
     alpha_mom = [
-                0.9,
-                #0.8,
+                0.9,   #best
+                0.95,
+                0.8,
                 #0.75,
-                0.7,
+                #0.7,
                 #0.5
                 ],
     max_gradient_norm = [10],
@@ -67,8 +72,9 @@ gs = GridSearch(
     validation = [True],  
     lambdal2 = [
         #0.00001, 
-        #0.0001,
-        0
+        0,
+        #0.0001,  #best
+        #0.00001
         #0.00001
         ]
 )

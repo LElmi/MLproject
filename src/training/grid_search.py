@@ -81,7 +81,8 @@ class GridSearch:
             'tr_mse': trainer.tr_mse_history,
             # 'vl_mse': trainer.vl_mse_history, # Se la tracci
             'tr_accuracy': trainer.tr_accuracy_history,
-            'vl_accuracy': trainer.vl_accuracy_history
+            'vl_accuracy': trainer.vl_accuracy_history,
+            'ts_accuracy': trainer.ts_accuracy_history
             })
         
 

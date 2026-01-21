@@ -3,6 +3,7 @@ from config import cup_config
 from src.utils import * 
 from src.activationf import *
 from src.training.grid_search import GridSearch
+from src.training.trainer.trainer_cup import TrainerCup
 from src.training.validation.k_fold import run_k_fold_cup
 from src.training.validation.hold_out import hold_out_validation
 
@@ -70,7 +71,9 @@ gs = GridSearch(
             
             momentum=[True],
             alpha_mom=[
-                0.6, 
+                0.0,
+                0.5,
+                0.9, 
                 #0.7
                 ],
             
@@ -79,15 +82,15 @@ gs = GridSearch(
                     #0.001
                     ], 
     
-    epochs=[5000], 
-    early_stopping=[True],
-    epsilon=[1e-6],
-    patience=[30],
-    max_gradient_norm=[100],
-    
-    split=[cup_config.SPLIT],
-    verbose=[False], 
-    validation=[True]
+            epochs=[5000], 
+            early_stopping=[True],
+            epsilon=[1e-6],
+            patience=[30],
+            max_gradient_norm=[100],
+            
+            split=[cup_config.SPLIT],
+            verbose=[False], 
+            validation=[True]
 )
 
 print("\n🚀 Avvio Grid Search con K-Fold interno (Model Selection)...")
@@ -103,30 +106,37 @@ print("\n" + "█"*60)
 print(f"🔎 AVVIO FINAL ASSESSMENT (Intense K-Fold)")
 print("█"*60)
 
+
+# Numero di K-FOLD
+#k_folds_final = 3
+
+
 # Cambio configurazione per Train intenso
 final_config = best_config.copy()
-final_config['epochs'] = 5000      
+final_config['epochs'] = 5000  # Deve essere la migliore
 final_config['patience'] = 500   
 final_config['epsilon'] = 1e-20
 final_config['verbose'] = False   
 
-# Numero di K-FOLD
-k_folds_final = 3
-
-final_results = run_k_fold_cup(
-    x_full=x_i,
-    d_full=d,
-    k_folds=k_folds_final,
-    model_config=final_config,
-    x_test_internal=x_i_test,
-    verbose=True
+trainer_final = TrainerCup(
+    input_size = x_i.shape[1],
+    **best_config
 )
+
+trainer_final.fit(x_i, d)
+layer_results = trainer_final.neuraln.forward_network(x_i_test, trainer_final.f_act_hidden, trainer_final.f_act_output)
+final_output_on_test_set = layer_results[-1]
+
+mee_final_test_denorm = mean_euclidean_error_test(final_output_on_test_set, d_test, x_max, x_min, d_max, d_min)
+#mse_final_test_denorm = mean_euclidean_error_test(final_output_on_test_set, d_test, x_max, x_min, d_max, d_min)
+
+print("\n\n|||| 🎬 MEE FINAL: ", mee_final_test_denorm, "|||\n\n")
 
 # =============================================================================
 # 4. FINAL INTEGRATED REPORT (Validation + Blind Test)
 # =============================================================================
 
-# --- 1. Calcolo Metriche su Blind Test (se disponibile) ---
+"""# --- 1. Calcolo Metriche su Blind Test (se disponibile) ---
 # Usiamo la denormalizzazione VETTORIALE (esatta)
 test_mse_real_mean, test_mse_real_std = 0.0, 0.0
 test_mee_real_mean, test_mee_real_std = 0.0, 0.0
@@ -209,82 +219,4 @@ print(f"Miglior config utilizzata:\n{final_config}")
 
 # Plotting finale
 plot_final_assessment(final_results, avg_target_range, k_folds_final)
-
-
-
-"""# =============================================================================
-# FINAL TEST INTERNAL
-# =============================================================================
-
-if "test_internal_history_output" in final_results:
-    final_result_test_internal = np.asarray(final_results["test_internal_history_output"])
-    
-    print(f"\n[DEBUG] Shape Test Results: {final_result_test_internal.shape} (K_Folds, N_Test, Outputs)")
-    
-    mee_test_list = []
-    mse_test_list = []
-
-    # Iteriamo su ogni fold (i)
-    # d_test è il target del test set (normalizzato)
-    for i in range(final_result_test_internal.shape[0]):
-        
-        # Calcolo MSE reale
-        mse_val = mean_squared_error_with_denorm(
-            outputs=final_result_test_internal[i], 
-            targets=d_test, 
-            d_min=d_min, 
-            d_max=d_max
-        )
-        mse_test_list.append(mse_val)
-
-        # Calcolo MEE reale
-        mee_val = mean_euclidean_error_with_denorm(
-            outputs=final_result_test_internal[i], 
-            targets=d_test, 
-            d_min=d_min, 
-            d_max=d_max
-        )
-        mee_test_list.append(mee_val)
-
-    print("\n" + "═"*60)
-    print("🌍 BLIND TEST INTERNO (Denormalizzato)")
-    print("═"*60)
-    print(f"Mean MSE (Real): {np.mean(mse_test_list):.5f} (± {np.std(mse_test_list):.5f})")
-    print(f"Mean MEE (Real): {np.mean(mee_test_list):.5f} (± {np.std(mee_test_list):.5f})")
-    print("═"*60)
-
-#print("||| ✅ Final test internal result array mse: ", final_results["test_internal_history_mse"])
-
-plot_final_assessment(final_results, avg_target_range, k_folds_final)
-
-# =============================================================================
-# REPORT
-# =============================================================================
-mean_mse_norm = final_results['mean_mse']
-mean_mee_norm = final_results['mean_mee']
-
-# Calcolo errori Denormalizzati (Reali)
-# MSE scala col quadrato del range, MEE scala linearmente
-
-mean_mse_real = mean_mse_norm * (avg_target_range ** 2) 
-mean_mee_real = mean_mee_norm * avg_target_range
-
-
-
-print("\n" + "="*60)
-print(f"📄 REPORT FINALE (Media su {k_folds_final} Folds)")
-print("="*60)
-
-print(f"📊 Metriche NORMALIZZATE (0-1):")
-print(f"   • Mean MSE: {mean_mse_norm:.6f} (± {final_results['std_mse']:.6f})")
-print(f"   • Mean MEE: {mean_mee_norm:.6f}")
-print("-" * 60)
-
-print(f"🌍 Metriche REALI (Denormalizzate):")
-print(f"   • Mean MSE: {mean_mse_real:.6f}")
-print(f"   • Mean MEE: {mean_mee_real:.6f}") 
-print("="*60)
-print(f"Miglior config utilizzata:\n{final_config}")
-
-
 """
