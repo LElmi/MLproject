@@ -383,85 +383,95 @@ def _generate_filename(prefix="plot"):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     return f"{prefix}_{timestamp}.png"
 
+import matplotlib.pyplot as plt
+import numpy as np
+import os
+from datetime import datetime
+import textwrap
+
 def plot_monk(
     tr_mse_history: list,
-    vl_mse_history: list,         # Può essere lista vuota se non tracciata
+    vl_mse_history: list,
     tr_accuracy_history: list,
-    vl_accuracy_history: list,    # Può essere lista vuota
-    ts_accuracy_history: list,    # Può essere lista vuota
+    vl_accuracy_history: list,
+    ts_accuracy_history: list,
     training_time: float,
+    config: dict = None,
     relative_path="results/monk/plots"
 ):
-    """
-    Plot per MONK aggiornato.
-    SX: MSE (Loss)
-    DX: Accuracy (Train vs Val vs Test)
-    """
     dir_path = _ensure_dir(relative_path)
-    
     epochs = np.arange(1, len(tr_mse_history) + 1)
     
-    # Crea figura con 2 subplot
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 7))
+    # Layout
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 7)) # Altezza ridotta leggermente
+    plt.subplots_adjust(bottom=0.20) # Meno spazio sotto perché il testo è orizzontale
     
-    # ========== GRAFICO 1: MSE (Loss) ==========
-    ax1.plot(epochs, tr_mse_history, color='red', linewidth=2, label='MSE Train')
-    
+    # --- GRAFICO 1: MSE ---
+    final_tr_mse = tr_mse_history[-1]
+    ax1.plot(epochs, tr_mse_history, color='#d62728', linewidth=2, label=f'MSE Train ({final_tr_mse:.2e})')
     if len(vl_mse_history) > 0:
-        ax1.plot(epochs, vl_mse_history, color='green', linestyle='--', label='MSE Val')
+        ax1.plot(epochs, vl_mse_history, color='#2ca02c', linestyle='--', label='MSE Val')
 
     ax1.set_title("Mean Squared Error (Loss)", fontsize=14, fontweight='bold')
-    ax1.set_xlabel("Epoch", fontsize=12)
-    ax1.set_ylabel("MSE", fontsize=12)
+    ax1.set_xlabel("Epoch")
+    ax1.set_ylabel("MSE (log)")
     ax1.set_yscale("log")
     ax1.grid(True, linestyle="--", alpha=0.3)
-    ax1.legend(fontsize=11)
+    ax1.legend()
     
-    # ========== GRAFICO 2: ACCURACY ==========
-    # Training (Sempre presente)
-    ax2.plot(epochs, tr_accuracy_history, color='red', linewidth=2, label='Acc Train')
+    # --- GRAFICO 2: ACCURACY ---
+    final_tr_acc = tr_accuracy_history[-1]
+    ax2.plot(epochs, tr_accuracy_history, color='#d62728', linewidth=2, label=f'Train Acc ({final_tr_acc:.1%})')
     
-    # Validation (Se presente)
-    if len(vl_accuracy_history) > 0:
-        # Tronca epochs se validation è finita prima (early stopping) o ha lunghezza diversa
-        # Ma di solito le lunghezze coincidono se non usi early stopping che killa tutto
-        v_epochs = np.arange(1, len(vl_accuracy_history) + 1)
-        ax2.plot(v_epochs, vl_accuracy_history, color='green', linestyle='-', label='Acc Val')
-
-        # Marker Best Validation
-        best_val = max(vl_accuracy_history)
-        best_epoch = np.argmax(vl_accuracy_history) + 1
-        ax2.scatter(best_epoch, best_val, color='green', marker='*', s=150, zorder=5, edgecolors='black', label=f'Best Val ({best_val:.2%})')
-
-    # Test (Se presente)
     if len(ts_accuracy_history) > 0:
         t_epochs = np.arange(1, len(ts_accuracy_history) + 1)
-        ax2.plot(t_epochs, ts_accuracy_history, color='blue', linestyle='--', label='Acc Test')
-        
-        # Marker Final Test
-        final_test = ts_accuracy_history[-1]
-        ax2.scatter(t_epochs[-1], final_test, color='blue', marker='o', s=80, zorder=5, label=f'Final Test ({final_test:.2%})')
-    
-    # Linea target 100%
+        final_ts_acc = ts_accuracy_history[-1]
+        best_ts_acc = max(ts_accuracy_history)
+        ax2.plot(t_epochs, ts_accuracy_history, color='#1f77b4', linestyle='-', linewidth=2, label=f'Test Acc ({final_ts_acc:.1%})')
+        best_epoch = np.argmax(ts_accuracy_history) + 1
+        ax2.scatter(best_epoch, best_ts_acc, color='#1f77b4', marker='*', s=150, zorder=5, edgecolors='black')
+
+    if len(vl_accuracy_history) > 0:
+        v_epochs = np.arange(1, len(vl_accuracy_history) + 1)
+        ax2.plot(v_epochs, vl_accuracy_history, color='#2ca02c', linestyle=':', alpha=0.7, label='Val Acc')
+
     ax2.axhline(y=1.0, color='gray', linestyle=':', alpha=0.5)
-    
     ax2.set_title("Classification Accuracy", fontsize=14, fontweight='bold')
-    ax2.set_xlabel("Epoch", fontsize=12)
-    ax2.set_ylabel("Accuracy", fontsize=12)
+    ax2.set_xlabel("Epoch")
     ax2.set_ylim([-0.05, 1.05]) 
     ax2.grid(True, linestyle="--", alpha=0.3)
-    ax2.legend(fontsize=10, loc='lower right')
+    ax2.legend(loc='lower right')
     
-    # ========== TITOLO E SALVATAGGIO ==========
-    plt.suptitle(f"MONK Training Analysis ({training_time:.2f}s)", fontsize=16, fontweight="bold")
-    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+    # --- INFO BOX ORIZZONTALE ---
+    if config:
+        # Crea stringa orizzontale
+        formatted_params = _format_params_horizontal(config)
+        
+        info_text = (
+            f"TRAINING REPORT | Time: {training_time:.2f}s | "
+            f"Final Train Acc: {final_tr_acc:.2%} | Final Test Acc: {ts_accuracy_history[-1] if ts_accuracy_history else 0:.2%}\n"
+            f"CONFIG: {formatted_params}"
+        )
+        
+        plt.figtext(
+            0.5, 0.03, # Posizione in basso
+            info_text, 
+            ha="center", 
+            fontsize=10, 
+            family='monospace',
+            bbox=dict(boxstyle="round,pad=0.5", facecolor="#f0f0f0", edgecolor="#aaaaaa")
+        )
+
+    # Titolo senza ORA
+    plt.suptitle(f"MONK Training Analysis", fontsize=16, fontweight="bold")
     
-    fname = _generate_filename("MONK_Tr_Vl_Ts")
+    fname = _generate_filename("MONK_Assessment")
     full_path = os.path.join(dir_path, fname)
     plt.savefig(full_path, dpi=300)
     print(f"✅ Grafico MONK salvato in: {full_path}")
     plt.close()
 
+    
 import matplotlib.pyplot as plt
 import numpy as np
 import os
@@ -710,95 +720,7 @@ import os
 from datetime import datetime
 import textwrap
 
-def plot_grid_search_analysis_monk(all_results, relative_path="results/monk/grid_search"):
-    """
-    Produce una griglia 4x3 (Top 12) per il MONK.
-    
-    CRITERIO ORDINAMENTO: Best Validation Accuracy (Decrescente).
-    COSA MOSTRA: 
-      - Curve: MSE (Loss) per vedere la convergenza.
-      - Titolo: Accuracy raggiunta su Validation e Training.
-    """
-    
-    base_dir = _ensure_dir(relative_path)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    
-    # 1. Ordinamento: dal modello con Accuracy Validazione PIÙ ALTA a scendere
-    #    (Assumiamo che 'vl_accuracy' sia una lista di storia)
-    sorted_results = sorted(all_results, key=lambda x: max(x['vl_accuracy']), reverse=True)
-    
-    # 2. Selezione Top 12
-    top_12 = sorted_results[:12]
-    
-    rows, cols = 4, 3
-    fig, axes = plt.subplots(rows, cols, figsize=(20, 24))
-    axes = axes.flatten()
-    
-    plt.suptitle(f"Top 12 MONK Configurations (Sorted by Best Val Accuracy) - {timestamp}", fontsize=20, fontweight='bold', y=0.99)
-    
-    for i in range(rows * cols):
-        ax = axes[i]
-        
-        if i < len(top_12):
-            res = top_12[i]
-            
-            # Dati
-            tr_mse = res['tr_mse']
-            # vl_mse = res.get('vl_mse', []) # Opzionale se ce l'hai
-            
-            # Statistiche Accuracy
-            vl_acc_hist = res['vl_accuracy']
-            tr_acc_hist = res['tr_accuracy']
-            
-            best_vl_acc = max(vl_acc_hist)
-            # Troviamo l'epoca del best accuracy per segnarla (opzionale) o prendiamo quella finale
-            # Qui prendiamo l'accuracy di train corrispondente alla migliore epoca di validation
-            best_idx = np.argmax(vl_acc_hist) 
-            tr_acc_at_best = tr_acc_hist[best_idx]
-            
-            epochs = np.arange(1, len(tr_mse) + 1)
-            
-            # --- PLOT CURVE MSE (LOSS) ---
-            # Disegniamo l'MSE perché hai chiesto "i plot dell'mse", utile per vedere se converge a 0
-            ax.plot(epochs, tr_mse, color='red', label='Train MSE', linewidth=1.5, alpha=0.8)
-            # Se hai anche vl_mse nel dizionario, scommenta sotto:
-            # if 'vl_mse' in res: ax.plot(epochs, res['vl_mse'], color='green', linestyle='--', label='Val MSE')
-            
-            # --- TITOLO: ACCURACY ---
-            # Mostriamo l'Accuracy nel titolo perché è la metrica decisiva
-            title = f"Rank #{i+1} | Best VL Acc: {best_vl_acc*100:.1f}% | TR Acc: {tr_acc_at_best*100:.1f}%"
-            
-            # Se ha risolto il Monk (100%), coloriamo il titolo di verde
-            title_color = 'green' if best_vl_acc >= 1.0 else 'black'
-            ax.set_title(title, fontsize=11, fontweight='bold', color=title_color)
-            
-            ax.set_yscale('log')
-            ax.grid(True, linestyle='--', alpha=0.4)
-            
-            if i % cols == 0: ax.set_ylabel("MSE (log)", fontsize=10)
-            
-            # --- CONFIGURAZIONE ---
-            params_text = _format_params_monk_wrapped(res['params'])
-            ax.text(
-                0.5, -0.18, 
-                params_text, 
-                transform=ax.transAxes, 
-                ha='center', va='top', 
-                fontsize=9, 
-                family='monospace',
-                bbox=dict(boxstyle="round,pad=0.5", fc="#f8f9fa", ec="#dee2e6", alpha=0.9)
-            )
-            
-        else:
-            ax.axis('off')
 
-    plt.subplots_adjust(top=0.95, bottom=0.05, hspace=0.65, wspace=0.2)
-    
-    fname = f"GRID_MONK_Top12_{timestamp}.png"
-    save_path = os.path.join(base_dir, fname)
-    plt.savefig(save_path, dpi=200, bbox_inches='tight')
-    print(f"✅ [MONK Grid] Griglia Top 12 salvata in: {save_path}")
-    plt.close()
 
 def _format_params_monk_wrapped(params):
     """Helper formattazione parametri specifici Monk"""
@@ -821,3 +743,436 @@ def _format_params_monk_wrapped(params):
 
     full_str = ", ".join(items)
     return "\n".join(textwrap.wrap(full_str, width=50))
+
+
+"""import matplotlib.pyplot as plt
+import numpy as np
+import os
+from datetime import datetime
+import textwrap
+
+def plot_grid_search_analysis_monk(all_results, relative_path="results/monk/grid_search", top_k_details=6):
+    
+    Produce:
+    1. SUMMARY GRID: Una griglia 4x3 con i Top 12 modelli (Overview).
+    2. DETAILS FOLDER: Immagini singole ad alta risoluzione per i 'top_k_details' modelli,
+       con grafici affiancati (MSE e Accuracy) e lista completa dei parametri.
+    
+    
+    # Setup Cartelle
+    base_dir = _ensure_dir(relative_path)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    
+    # Cartella per i plot singoli dettagliati
+    details_dir = os.path.join(base_dir, f"details_{timestamp}")
+    os.makedirs(details_dir, exist_ok=True)
+    
+    # 1. Ordinamento: Best Validation Accuracy (Decrescente)
+    sorted_results = sorted(all_results, key=lambda x: max(x['vl_accuracy']), reverse=True)
+    
+    # =========================================================
+    # FASE A: SUMMARY GRID (TOP 12)
+    # =========================================================
+    top_12 = sorted_results[:12]
+    rows, cols = 4, 3
+    fig, axes = plt.subplots(rows, cols, figsize=(20, 24))
+    axes = axes.flatten()
+    
+    plt.suptitle(f"Top 12 MONK Models (Sorted by Best Val Acc) - {timestamp}", fontsize=20, fontweight='bold', y=0.99)
+    
+    for i in range(rows * cols):
+        ax = axes[i]
+        if i < len(top_12):
+            res = top_12[i]
+            _plot_summary_subplot(ax, res, i+1)
+        else:
+            ax.axis('off')
+
+    plt.subplots_adjust(top=0.95, bottom=0.05, hspace=0.65, wspace=0.2)
+    summary_path = os.path.join(base_dir, f"GRID_MONK_Summary_{timestamp}.png")
+    plt.savefig(summary_path, dpi=200, bbox_inches='tight')
+    plt.close()
+    print(f"✅ [Summary] Griglia salvata in: {summary_path}")
+
+    # =========================================================
+    # FASE B: INDIVIDUAL PLOTS (TOP K DETAILS)
+    # =========================================================
+    print(f"   ...Generazione plot dettagliati per i migliori {top_k_details} modelli...")
+    
+    for i in range(min(top_k_details, len(sorted_results))):
+        res = sorted_results[i]
+        rank = i + 1
+        _plot_single_model_detail(res, rank, details_dir)
+
+    print(f"✅ [Details] {min(top_k_details, len(sorted_results))} plot singoli salvati in: {details_dir}")
+"""
+
+def _plot_summary_subplot(ax, res, rank):
+    """Disegna il singolo riquadro della griglia riassuntiva."""
+    tr_mse = res['tr_mse']
+    vl_acc = res['vl_accuracy']
+    tr_acc = res['tr_accuracy']
+    
+    best_vl_acc = max(vl_acc)
+    best_idx = np.argmax(vl_acc)
+    tr_acc_at_best = tr_acc[best_idx]
+    epochs = np.arange(1, len(tr_mse) + 1)
+    
+    # Plot MSE (Rosso)
+    ax.plot(epochs, tr_mse, color='red', label='Train MSE', linewidth=1.5, alpha=0.8)
+    
+    # Titolo (Accuracy info)
+    title = f"Rank #{rank} | Best VL Acc: {best_vl_acc*100:.1f}% | TR: {tr_acc_at_best*100:.1f}%"
+    color = 'green' if best_vl_acc >= 1.0 else 'black'
+    ax.set_title(title, fontsize=10, fontweight='bold', color=color)
+    
+    ax.set_yscale('log')
+    ax.grid(True, linestyle='--', alpha=0.4)
+    
+    # Parametri ridotti
+    params_text = _format_params_monk_wrapped(res['params'])
+    ax.text(0.5, -0.2, params_text, transform=ax.transAxes, ha='center', va='top', 
+            fontsize=8, family='monospace', bbox=dict(boxstyle="round", fc="#f8f9fa", alpha=0.9))
+
+
+def _plot_single_model_detail(res, rank, folder):
+    """
+    Crea un'immagine dettagliata con 2 grafici affiancati:
+    SX: MSE (Loss) con dettagli numerici.
+    DX: Accuracy con confronto Train/Val.
+    SOTTO: Box completo parametri.
+    """
+    fig, (ax_mse, ax_acc) = plt.subplots(1, 2, figsize=(18, 7))
+    
+    params = res['params']
+    tr_mse = res['tr_mse']
+    tr_acc = res['tr_accuracy']
+    vl_acc = res['vl_accuracy']
+    epochs = np.arange(1, len(tr_mse) + 1)
+    
+    # --- 1. GRAFICO MSE (Sinistra) ---
+    final_mse = tr_mse[-1]
+    min_mse = min(tr_mse)
+    min_mse_epoch = np.argmin(tr_mse) + 1
+    
+    ax_mse.plot(epochs, tr_mse, color='#d62728', linewidth=2, label='Training MSE')
+    
+    # Annotazione Minimo MSE
+    ax_mse.scatter(min_mse_epoch, min_mse, color='black', s=50, zorder=5)
+    ax_mse.annotate(f"Min: {min_mse:.2e}", xy=(min_mse_epoch, min_mse), xytext=(10, 10), 
+                    textcoords='offset points', fontsize=9)
+
+    ax_mse.set_title("Mean Squared Error (Loss) Analysis", fontsize=14, fontweight='bold')
+    ax_mse.set_xlabel("Epoch")
+    ax_mse.set_ylabel("MSE (log)")
+    ax_mse.set_yscale('log')
+    ax_mse.grid(True, which="both", ls="-", alpha=0.2)
+    ax_mse.legend()
+    
+    # --- 2. GRAFICO ACCURACY (Destra) ---
+    best_vl = max(vl_acc)
+    best_epoch = np.argmax(vl_acc) + 1
+    
+    ax_acc.plot(epochs, tr_acc, color='#ff7f0e', label='Training Acc', linewidth=2)
+    ax_acc.plot(epochs, vl_acc, color='#1f77b4', label='Validation Acc', linewidth=2, linestyle='--')
+    
+    # Evidenzia Best Validation
+    ax_acc.scatter(best_epoch, best_vl, s=150, c='green', marker='*', edgecolors='black', zorder=10, 
+                   label=f"Best Val: {best_vl*100:.1f}%")
+    
+    # Linea 100%
+    ax_acc.axhline(1.0, color='gray', linestyle=':', alpha=0.5)
+    
+    ax_acc.set_title("Accuracy Trajectory", fontsize=14, fontweight='bold')
+    ax_acc.set_xlabel("Epoch")
+    ax_acc.set_ylabel("Accuracy")
+    ax_acc.set_ylim([-0.05, 1.05])
+    ax_acc.legend(loc='lower right')
+    ax_acc.grid(True, alpha=0.3)
+
+    # --- 3. BOX INFORMAZIONI ---
+    # Formattazione parametri pulita
+    param_str = ",  ".join([f"{k}={v}" for k, v in params.items() if k not in ['verbose', 'validation']])
+    # Spezza la stringa se troppo lunga
+    wrapped_params = "\n".join(textwrap.wrap(param_str, width=120))
+    
+    info_text = (
+        f"RANK #{rank}\n"
+        f"Best Validation Accuracy: {best_vl*100:.2f}% (Epoch {best_epoch})\n"
+        f"Final Training MSE: {final_mse:.6f}\n"
+        f"--------------------------------------------------\n"
+        f"CONFIGURAZIONE:\n{wrapped_params}"
+    )
+    
+    plt.figtext(0.5, 0.02, info_text, ha="center", fontsize=11, family='monospace',
+                bbox={"boxstyle": "round,pad=1", "facecolor": "#f0f0f0", "edgecolor": "#aaaaaa"})
+
+    plt.subplots_adjust(bottom=0.25) # Lascia spazio per il testo sotto
+    
+    # Salvataggio
+    safe_name = f"Rank_{rank:02d}_Acc_{int(best_vl*100)}.png"
+    plt.savefig(os.path.join(folder, safe_name), dpi=150)
+    plt.close()
+
+
+def _format_params_monk_wrapped(params):
+    """Helper formattazione breve per la griglia"""
+    ignored = ['verbose', 'validation', 'split', 'n_outputs', 'early_stopping', 'epsilon']
+    items = []
+    for k, v in params.items():
+        if k in ignored: continue
+        # Abbreviazioni per risparmiare spazio nel plot piccolo
+        key = k.replace("mini_batch_size", "bs").replace("learning_rate", "lr") \
+               .replace("decay_factor", "d_f").replace("decay_step", "d_s") \
+               .replace("momentum", "mom").replace("alpha_mom", "a_m") \
+               .replace("lambdal2", "l2").replace("max_gradient_norm", "clip") \
+               .replace("units_list", "units").replace("f_act_hidden", "act")
+        
+        val = str(v)
+        if hasattr(v, '__name__'): val = v.__name__ 
+        if isinstance(v, list): val = str(v).replace(" ", "")
+        items.append(f"{key}={val}")
+
+    full_str = ", ".join(items)
+    return "\n".join(textwrap.wrap(full_str, width=45))
+
+def _ensure_dir(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
+    return path
+
+
+import matplotlib.pyplot as plt
+import numpy as np
+import os
+from datetime import datetime
+import textwrap
+
+# =============================================================================
+# 1. PLOT MONK SINGOLO (Aggiornato: No ora, Info Orizzontali)
+# =============================================================================
+def plot_monk(
+    tr_mse_history: list,
+    vl_mse_history: list,
+    tr_accuracy_history: list,
+    vl_accuracy_history: list,
+    ts_accuracy_history: list,
+    training_time: float,
+    config: dict = None,
+    relative_path="results/monk/plots"
+):
+    dir_path = _ensure_dir(relative_path)
+    epochs = np.arange(1, len(tr_mse_history) + 1)
+    
+    # Layout
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 7)) # Altezza ridotta leggermente
+    plt.subplots_adjust(bottom=0.20) # Meno spazio sotto perché il testo è orizzontale
+    
+    # --- GRAFICO 1: MSE ---
+    final_tr_mse = tr_mse_history[-1]
+    ax1.plot(epochs, tr_mse_history, color='#d62728', linewidth=2, label=f'MSE Train ({final_tr_mse:.2e})')
+    if len(vl_mse_history) > 0:
+        ax1.plot(epochs, vl_mse_history, color='#2ca02c', linestyle='--', label='MSE Val')
+
+    ax1.set_title("Mean Squared Error (Loss)", fontsize=14, fontweight='bold')
+    ax1.set_xlabel("Epoch")
+    ax1.set_ylabel("MSE (log)")
+    ax1.set_yscale("log")
+    ax1.grid(True, linestyle="--", alpha=0.3)
+    ax1.legend()
+    
+    # --- GRAFICO 2: ACCURACY ---
+    final_tr_acc = tr_accuracy_history[-1]
+    ax2.plot(epochs, tr_accuracy_history, color='#d62728', linewidth=2, label=f'Train Acc ({final_tr_acc:.1%})')
+    
+    if len(ts_accuracy_history) > 0:
+        t_epochs = np.arange(1, len(ts_accuracy_history) + 1)
+        final_ts_acc = ts_accuracy_history[-1]
+        best_ts_acc = max(ts_accuracy_history)
+        ax2.plot(t_epochs, ts_accuracy_history, color='#1f77b4', linestyle='-', linewidth=2, label=f'Test Acc ({final_ts_acc:.1%})')
+        best_epoch = np.argmax(ts_accuracy_history) + 1
+        ax2.scatter(best_epoch, best_ts_acc, color='#1f77b4', marker='*', s=150, zorder=5, edgecolors='black')
+
+    if len(vl_accuracy_history) > 0:
+        v_epochs = np.arange(1, len(vl_accuracy_history) + 1)
+        ax2.plot(v_epochs, vl_accuracy_history, color='#2ca02c', linestyle=':', alpha=0.7, label='Val Acc')
+
+    ax2.axhline(y=1.0, color='gray', linestyle=':', alpha=0.5)
+    ax2.set_title("Classification Accuracy", fontsize=14, fontweight='bold')
+    ax2.set_xlabel("Epoch")
+    ax2.set_ylim([-0.05, 1.05]) 
+    ax2.grid(True, linestyle="--", alpha=0.3)
+    ax2.legend(loc='lower right')
+    
+    # --- INFO BOX ORIZZONTALE ---
+    if config:
+        # Crea stringa orizzontale
+        formatted_params = _format_params_horizontal(config)
+        
+        info_text = (
+            f"TRAINING REPORT | Time: {training_time:.2f}s | "
+            f"Final Train Acc: {final_tr_acc:.2%} | Final Test Acc: {ts_accuracy_history[-1] if ts_accuracy_history else 0:.2%}\n"
+            f"CONFIG: {formatted_params}"
+        )
+        
+        plt.figtext(
+            0.5, 0.03, # Posizione in basso
+            info_text, 
+            ha="center", 
+            fontsize=10, 
+            family='monospace',
+            bbox=dict(boxstyle="round,pad=0.5", facecolor="#f0f0f0", edgecolor="#aaaaaa")
+        )
+
+    # Titolo senza ORA
+    plt.suptitle(f"MONK Training Analysis", fontsize=16, fontweight="bold")
+    
+    fname = _generate_filename("MONK_Assessment")
+    full_path = os.path.join(dir_path, fname)
+    plt.savefig(full_path, dpi=300)
+    print(f"✅ Grafico MONK salvato in: {full_path}")
+    plt.close()
+
+
+# =============================================================================
+# 2. GRID SEARCH ANALYSIS (Solo Top 6 + Info Orizzontali)
+# =============================================================================
+def plot_grid_search_analysis_monk(all_results, relative_path="results/monk/grid_search", top_k_details=6):
+    
+    base_dir = _ensure_dir(relative_path)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    details_dir = os.path.join(base_dir, f"details_{timestamp}")
+    os.makedirs(details_dir, exist_ok=True)
+    
+    # Ordinamento
+    sorted_results = sorted(all_results, key=lambda x: max(x['vl_accuracy']), reverse=True)
+    
+    # --- FASE A: SUMMARY GRID (SOLO TOP 6) ---
+    top_6 = sorted_results[:6]  # Prendiamo solo i primi 6
+    rows, cols = 2, 3           # Griglia 2x3
+    
+    fig, axes = plt.subplots(rows, cols, figsize=(18, 10)) # Dimensioni adattate
+    axes = axes.flatten()
+    
+    plt.suptitle(f"Top 6 MONK Models (Sorted by Best Val Acc)", fontsize=18, fontweight='bold', y=0.98)
+    
+    for i in range(rows * cols):
+        ax = axes[i]
+        if i < len(top_6):
+            res = top_6[i]
+            _plot_summary_subplot(ax, res, i+1)
+        else:
+            ax.axis('off')
+
+    plt.subplots_adjust(top=0.90, bottom=0.05, hspace=0.4, wspace=0.2)
+    summary_path = os.path.join(base_dir, f"GRID_MONK_Top6_{timestamp}.png")
+    plt.savefig(summary_path, dpi=200, bbox_inches='tight')
+    plt.close()
+    print(f"✅ [Summary] Griglia Top 6 salvata in: {summary_path}")
+
+    # --- FASE B: INDIVIDUAL PLOTS (Info Orizzontali) ---
+    print(f"   ...Generazione plot dettagliati per i Top {len(top_6)}...")
+    for i in range(len(top_6)):
+        res = top_6[i]
+        _plot_single_model_detail_horizontal(res, i + 1, details_dir)
+
+
+def _plot_summary_subplot(ax, res, rank):
+    """Sottografico per la griglia riassuntiva"""
+    tr_mse = res['tr_mse']
+    vl_acc = res['vl_accuracy']
+    best_vl_acc = max(vl_acc)
+    epochs = np.arange(1, len(tr_mse) + 1)
+    
+    ax.plot(epochs, tr_mse, color='red', label='Train MSE')
+    
+    title = f"#{rank} | Best VL Acc: {best_vl_acc*100:.1f}%"
+    color = 'green' if best_vl_acc >= 1.0 else 'black'
+    ax.set_title(title, fontsize=10, fontweight='bold', color=color)
+    ax.set_yscale('log')
+    ax.grid(True, alpha=0.4)
+    
+    # Parametri molto stringati per la preview piccola
+    params_short = _format_params_short(res['params'])
+    ax.text(0.5, -0.25, params_short, transform=ax.transAxes, ha='center', va='top', 
+            fontsize=7, family='monospace', bbox=dict(boxstyle="round", fc="#f8f9fa", alpha=0.9))
+
+
+def _plot_single_model_detail_horizontal(res, rank, folder):
+    """Plot dettagliato con info sviluppate in orizzontale"""
+    fig, (ax_mse, ax_acc) = plt.subplots(1, 2, figsize=(16, 7)) # Largo
+    plt.subplots_adjust(bottom=0.20) # Spazio sotto
+    
+    params = res['params']
+    tr_mse = res['tr_mse']
+    tr_acc = res['tr_accuracy']
+    vl_acc = res['vl_accuracy']
+    epochs = np.arange(1, len(tr_mse) + 1)
+    
+    # 1. MSE
+    ax_mse.plot(epochs, tr_mse, color='#d62728', linewidth=2, label='Training MSE')
+    ax_mse.set_title("Loss (MSE)", fontsize=12, fontweight='bold')
+    ax_mse.set_yscale('log')
+    ax_mse.grid(True, alpha=0.3)
+    ax_mse.legend()
+    
+    # 2. Accuracy
+    best_vl = max(vl_acc)
+    best_epoch = np.argmax(vl_acc) + 1
+    ax_acc.plot(epochs, tr_acc, color='#d62728', label='Train Acc', linewidth=2)
+    ax_acc.plot(epochs, vl_acc, color='#1f77b4', label='Val Acc', linewidth=2, linestyle='--')
+    ax_acc.scatter(best_epoch, best_vl, s=150, c='green', marker='*', zorder=10)
+    ax_acc.axhline(1.0, color='gray', linestyle=':', alpha=0.5)
+    ax_acc.set_title(f"Accuracy (Best Val: {best_vl*100:.2f}%)", fontsize=12, fontweight='bold')
+    ax_acc.set_ylim([-0.05, 1.05])
+    ax_acc.legend(loc='lower right')
+    ax_acc.grid(True, alpha=0.3)
+
+    # 3. Info Orizzontali
+    formatted_params = _format_params_horizontal(params)
+    info_text = (
+        f"RANK #{rank} | Best Val Acc: {best_vl*100:.2f}% (Ep {best_epoch}) | Final Train MSE: {tr_mse[-1]:.2e}\n"
+        f"CONFIG: {formatted_params}"
+    )
+    
+    plt.figtext(0.5, 0.03, info_text, ha="center", fontsize=10, family='monospace',
+                bbox={"boxstyle": "round,pad=0.5", "facecolor": "#f0f0f0", "edgecolor": "#aaaaaa"})
+    
+    safe_name = f"Rank_{rank:02d}_Horizontal.png"
+    plt.savefig(os.path.join(folder, safe_name), dpi=150)
+    plt.close()
+
+
+# =============================================================================
+# HELPER FORMATTAZIONE ORIZZONTALE
+# =============================================================================
+def _format_params_horizontal(params):
+    """Formatta il dizionario in una stringa lunga orizzontale, andando a capo solo se necessario"""
+    ignore = ['verbose', 'validation', 'split', 'early_stopping', 'epsilon', 'n_outputs']
+    
+    items = []
+    for k, v in params.items():
+        if k in ignore: continue
+        
+        # Abbreviazioni chiave
+        key = k.replace("mini_batch_size", "BS").replace("learning_rate", "LR") \
+               .replace("decay_factor", "D_Fact").replace("decay_step", "D_Step") \
+               .replace("momentum", "Mom").replace("alpha_mom", "A_Mom") \
+               .replace("lambdal2", "L2").replace("max_gradient_norm", "Clip") \
+               .replace("units_list", "Units")
+        
+        val = str(v)
+        if hasattr(v, '__name__'): val = v.__name__ 
+        if isinstance(v, list): val = str(v).replace(" ", "")
+        
+        items.append(f"{key}={val}")
+
+    # Unisci tutto con virgole
+    full_str = ", ".join(items)
+    
+    # Usa textwrap con una larghezza molto ampia (es. 130 caratteri) per forzare l'orizzontalità
+    return "\n".join(textwrap.wrap(full_str, width=130))
+
+def _format_params_short(params):
+    """Versione compressa per i box piccoli della griglia"""
+    return _format_params_horizontal(params) # Riutilizziamo la stessa logica ma il box è più stretto, quindi andrà a capo da solo

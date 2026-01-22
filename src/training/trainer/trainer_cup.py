@@ -93,9 +93,16 @@ class TrainerCup(Trainer):
 
         return (self.tr_mee_history[-1], 
                 self.tr_mse_history[-1], 
+                self.vl_mee_history[-1] if vl_x is not None else 0.0,
+                self.vl_mse_history[-1] if vl_x is not None else 0.0)
+
+        
+        """
+            return (self.tr_mee_history[-1], 
+                self.tr_mse_history[-1], 
                 self.vl_mee_history[-1] if self.validation else 0.0,
                 self.vl_mse_history[-1] if self.validation else 0.0)
-                #final_vl_accuracy if self.validation else 0.0)
+                #final_vl_accuracy if self.validation else 0.0)"""
 
 
     def _run_epoch_vl(self, vl_x, vl_d, metric_fn: Callable = None):

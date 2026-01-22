@@ -2,6 +2,7 @@ from src.training.trainer.trainer import Trainer
 from src.training.trainer.stopper import EarlyStopper
 import time
 from src.utils.visualization import plot_monk
+from src.activationf import *
 
 
 
@@ -21,6 +22,8 @@ class TrainerMonk(Trainer):
         self.tr_accuracy_history = []
         self.vl_accuracy_history = []
         self.ts_accuracy_history = []
+
+        self.config = kwargs
 
 
     def fit(self, tr_x, tr_d, vl_x = None, vl_d = None, ts_x = None, ts_d = None):
@@ -92,7 +95,8 @@ class TrainerMonk(Trainer):
                             tr_accuracy_history=self.tr_accuracy_history, 
                             vl_accuracy_history=self.vl_accuracy_history,
                             ts_accuracy_history=self.ts_accuracy_history, 
-                            training_time=training_time
+                            training_time=training_time,
+                            config=self.config
             )
 
         return (tr_epoch_results["mse_tr"], best_vl_accuracy)
@@ -107,7 +111,11 @@ class TrainerMonk(Trainer):
         for i, pattern in enumerate(x):
             layer_results, _ = self.neuraln.forward_network(pattern, self.f_act_hidden, self.f_act_output)
 
-            prediction = 1.0 if layer_results[-1] >= 0.5 else 0.0
+            if self.f_act_output == tanh:
+                prediction = 1.0 if layer_results[-1] >= 0.0 else 0.0
+            else: 
+                prediction = 1.0 if layer_results[-1] >= 0.5 else 0.0
+
             if prediction == d[i]:
                 matched += 1
         

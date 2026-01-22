@@ -36,10 +36,12 @@ gs = GridSearch(
             units_list=[
             #[128, 64, 32], 
             #[400, 200],
-            #[1200, 600]
+            [2400, 1200],
+            [1200, 600],
+            [600, 300]
             #[200, 100],
             #[256, 128, 64]
-            #[40,20]
+            #[40,20]x
             ],
 
             n_outputs=[cup_config.N_OUTPUTS],
@@ -48,8 +50,9 @@ gs = GridSearch(
 
 
             mini_batch_size=[
-                            #32, 
-                            16
+                            32, #mmmm
+                            
+                            #16
                             ], 
 
             learning_rate=[
@@ -57,7 +60,8 @@ gs = GridSearch(
                         #0.0025,
                         #0.008,
                         #0.015,
-                        0.01
+                        #0.01.  #mmm
+                        0.02
                         #0.001,
                         #0.0005
                         ], 
@@ -71,20 +75,20 @@ gs = GridSearch(
             
             momentum=[True],
             alpha_mom=[
-                0.0,
+                #0.0,
                 #0.5,
-                #0.9, 
+                0.9, #mmm
                 #0.7
                 ],
             
             lambdal2=[
                     0.00001, 
-                    #0.001
+                    #0.001.  #mmm
                     ], 
     
             epochs=[5000], 
             early_stopping=[True],
-            epsilon=[1e-6],
+            epsilon=[1e-20],
             patience=[30],
             max_gradient_norm=[100],
             

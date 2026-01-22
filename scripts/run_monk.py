@@ -24,17 +24,22 @@ gs = GridSearch(
 
     units_list = [
         [3], #best
-        [2]
+        [2],
+        [4]
+        #[2, 2],
+        #[3, 3],
         ],  
     n_outputs = [monk_config.N_OUTPUTS],
-    f_act_hidden = [sigmaf], 
+    f_act_hidden = [sigmaf, relu], 
     f_act_output = [sigmaf],
     
     learning_rate = [
             0.25, 
-            0.2,    # best
+            0.1,    # best
+            0.35
             #0.15,
-            #0.17,
+            #0.01,
+            #0.005
             #0.16
             ], 
     
@@ -44,28 +49,33 @@ gs = GridSearch(
     
     mini_batch_size = [
         len(tr_input),
-        #10,
-        #35,    # best
-        50           
+        1,
+        50,    # best
+        #len(tr_input) * 0.5,
+        #len(tr_input) * 0.33,       
+        #len(tr_input) * 0.2,
+
     ],
     
-    epochs=[500],
+    epochs=[200],
     
     # --- EARLY STOPPING (Fondamentale) ---
     early_stopping = [True],
-    patience = [50],       # Stop se accuracy non migliora per 20 epoche
-    epsilon = [0.00001],
+    patience = [200],       # Stop se accuracy non migliora per 20 epoche
+    epsilon = [1e-3],
     
     momentum = [True],  
     alpha_mom = [
+                0.0,
+                0.6,
                 0.9,   #best
-                0.95,
-                0.8,
+                #0.95,
+                #0.8,
                 #0.75,
                 #0.7,
                 #0.5
                 ],
-    max_gradient_norm = [10],
+    max_gradient_norm = [100],
     
     split = [monk_config.SPLIT],
     verbose = [False],    
@@ -112,10 +122,10 @@ except:
 
 # Tolgo l'early 
 final_config = best_config.copy()
-final_config['early_stopping'] = False      
+final_config['early_stopping'] = False   
 
 # Creiamo il trainer finale
-final_trainer = TrainerMonk(input_size=x_test.shape[1],**best_config)
+final_trainer = TrainerMonk(input_size=x_test.shape[1],**final_config)
 # Forziamo verbose=True per vedere il training
 final_trainer.verbose = True 
 
@@ -124,8 +134,8 @@ final_trainer.verbose = True
 # Oppure usiamo early stopping su una piccola porzione se necessario.
 # Per il Monk standard, spesso si fa training a epoche fisse o fino a MSE < tot.
 mse_final, acc_final_tr = final_trainer.fit(x_i, d, 
-                                            vl_x=x_test if has_test_set else None, 
-                                            vl_d=d_test if has_test_set else None)
+                                            ts_x=x_test if has_test_set else None, 
+                                            ts_d=d_test if has_test_set else None)
 
 print("\n" + "█"*60)
 print("📄 REPORT FINALE MONK")

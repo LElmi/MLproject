@@ -1,6 +1,10 @@
 import numpy as np
 from typing import Callable
 from src.activationf.linear import linear
+from src.activationf.sigmoid import sigmaf
+from src.activationf.relu import relu
+from src.activationf.leaky_relu import leaky_relu
+from src.activationf.tanh import tanh
 
 Array2D = np.ndarray
 Array1D = np.ndarray
@@ -95,15 +99,38 @@ class NN:
             if self.f_act_output == linear:
                 # Buono per ReLu
                 weights = np.random.randn(n_in, n_out)* np.sqrt(2.0 / n_in)
-                weights = self._add_bias(weights)
+                #weights = self._add_bias(weights)
+
+            elif (self.f_act_output == sigmaf or self.f_act_output == tanh) and (self.f_act_hidden == relu or self.f_act_hidden == leaky_relu):
+
+                if i == len(layer_sizes) - 2:
+                    # Glorot/Xavier uniform: range = ±sqrt(6 / (n_in + n_out))
+                    limit = np.sqrt(6.0 / (n_in + n_out))
+                    weights = np.random.uniform(-limit, limit, (n_in, n_out))
+
+                # ---- Hidden layers (He initialization) ----
+                else:
+                    # He uniform: range = ±sqrt(6 / n_in)
+                    he_limit = np.sqrt(6.0 / n_in)
+                    weights = np.random.uniform(-he_limit, he_limit, (n_in, n_out))
+
+                    #weights = self._add_bias(weights)
 
             else:
+            
                 # Buono per SIGMOIDE
                 limit = np.sqrt(6 / (n_in + n_out))
                 weights = np.random.uniform(-limit, limit, (n_in, n_out))
-                weights = self._add_bias(weights)
+        
+            
+            weights = self._add_bias(weights)
 
+            
+            
             self.weights_matrix_list.append(weights)
+
+
+
 
     def _add_bias(self, x: Array2D) -> Array2D:
         """ 

@@ -32,3 +32,12 @@
 - [ ] da vedere
     - bootstrap
     - cascay correlation
+
+
+- [domani]
+
+    - denormalizzazione dati plot cup
+    - migliorare il layout dati plot cup top 3
+    - aggiungere mee 
+    - tabella grid search tr vl ts
+    - runnare il final model dei top 3 con plot della learning curve denormalizzati di tr vl ts
