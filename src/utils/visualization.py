@@ -1175,4 +1175,4 @@ def _format_params_horizontal(params):
 
 def _format_params_short(params):
     """Versione compressa per i box piccoli della griglia"""
-    return _format_params_horizontal(params) # Riutilizziamo la stessa logica ma il box è più stretto, quindi andrà a capo da solo
+    return _format_params_horizontal(params) # Riutilizziamo la stessa logica ma il box è più stretto, quindi andrà a capo da solo"

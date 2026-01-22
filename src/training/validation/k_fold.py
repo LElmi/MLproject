@@ -30,17 +30,16 @@ def run_k_fold_cup(x_full, d_full, k_folds, model_config, x_test_internal = None
     - Curve Medie: Per i grafici (solo MSE, o anche MEE se vuoi)
     """
     
-    vl_mse_vals = []
-    vl_mee_vals = [] 
-
-    tr_mse_vals = []
-    tr_mee_vals = [] 
-
+    all_tr_mse_histories = []
+    all_vl_mse_histories = []
     all_tr_mee_histories = []
     all_vl_mee_histories = []
 
-    all_tr_mse_histories = [] 
-    all_vl_mse_histories = []
+    # Liste per le statistiche scalari finali
+    vl_mee_finals = []
+    vl_mse_finals = []
+    tr_mse_finals = []
+    tr_mee_finals = []
 
     test_internal_history_output = []
 
@@ -60,73 +59,40 @@ def run_k_fold_cup(x_full, d_full, k_folds, model_config, x_test_internal = None
             fold_id=i if verbose else None
         )
 
-        if x_test_internal is not None:
-            result, _ = k_trainer.neuraln.forward_network(x_test_internal, k_trainer.f_act_hidden, k_trainer.f_act_output)
-
-            # result[-1] = vettore di outuput della i-esima k-fold
-            test_internal_history_output.append(result[-1])
-        
-        # Appende per ogni k-esima fold, il vl_mse e vl_mee raggiunto migliore
-        #mse_vals.append(min(k_trainer.vl_mse_history))
-        #mee_vals.append(min(k_trainer.vl_mee_history)) 
-        vl_mse_vals.append(k_trainer.vl_mse_history[-1])
-        vl_mee_vals.append(k_trainer.vl_mee_history[-1])
-        tr_mse_vals.append(k_trainer.tr_mse_history[-1])
-        tr_mee_vals.append(k_trainer.tr_mee_history[-1])
-
-        all_tr_mee_histories.append(k_trainer.tr_mee_history)
-        all_vl_mee_histories.append(k_trainer.vl_mee_history)
         all_tr_mse_histories.append(k_trainer.tr_mse_history)
         all_vl_mse_histories.append(k_trainer.vl_mse_history)
+        all_tr_mee_histories.append(k_trainer.tr_mee_history)
+        all_vl_mee_histories.append(k_trainer.vl_mee_history)
 
-    # Cerca tra tutti k training quello che è durato meno epoche
-    # vl_mee_vals k1 : [0.12, 532, 123]
-    # vl_mee_vals k2 : [[0.12, 43, 1313]]
-    # vl_mee_vals k3 : [[0.12, 123, 39]]]
-    # all_vl _mee_histories [ [ ], [ ], [ ]]
+        vl_mse_finals.append(k_trainer.vl_mse_history[-1])
+        vl_mee_finals.append(k_trainer.vl_mee_history[-1])
+        tr_mse_finals.append(k_trainer.tr_mse_history[-1])
+        tr_mee_finals.append(k_trainer.tr_mee_history[-1])
+        #epochs_reached.append(len(k_trainer.tr_mse_history))
+
+        if x_test_internal is not None:
+            res, _ = k_trainer.neuraln.forward_network(x_test_internal, k_trainer.f_act_hidden, k_trainer.f_act_output)
+            test_internal_history_output.append(res[-1])
     
     
-    min_len_mse = min(len(h) for h in all_tr_mse_histories)
+# Restituisce direttamente le liste di liste
+    return {
+        "vl_mean_mse": np.mean(vl_mse_finals),
+        "vl_std_mse": np.std(vl_mse_finals),
+        "tr_mean_mse": np.mean(tr_mse_finals),
 
-    tr_cut_mse = [h[:min_len_mse] for h in all_tr_mse_histories]
-    vl_cut_mse = [h[:min_len_mse] for h in all_vl_mse_histories]
-    
-    mean_tr_curve_mse = np.mean(tr_cut_mse, axis=0).tolist()
-    mean_vl_curve_mse = np.mean(vl_cut_mse, axis=0).tolist()
+        "vl_mean_mee": np.mean(vl_mee_finals),
+        "vl_std_mee": np.std(vl_mee_finals),
+        "tr_mean_mee": np.mean(tr_mee_finals),
 
+        
+        "all_tr_history_mse": all_tr_mse_histories,
+        "all_vl_history_mse": all_vl_mse_histories,
+        
+        "all_tr_history_mee": all_tr_mee_histories,
+        "all_vl_history_mee": all_vl_mee_histories,
 
-    if x_test_internal is not None:
-        return {
-            "vl_mean_mse": np.mean(vl_mse_vals),
-            "vl_mse_vals": vl_mse_vals,
+        "epoch_reached": k_trainer.trigger_epoch,
 
-            "tr_mean_mse": np.mean(tr_mse_vals),
-            "tr_mse_vals": tr_mse_vals,
-            
-            "all_histories"
-            #"mean_tr_history_mee": mean_tr_curve_mee,
-            #"mean_vl_history_mee": mean_vl_curve_mee,
-            
-            #"mean_tr_history_mse": mean_tr_curve_mse,
-            #"mean_vl_history_mse": mean_vl_curve_mse,
-
-            "test_internal_history_output" : test_internal_history_output,
-
-            "epoch_reached" : k_trainer.trigger_epoch
-
-        }
-    else:
-        return {
-            "mean_mse": np.mean(mse_vals),
-            "std_mse": np.std(mse_vals),
-            
-            "mean_mee": np.mean(mee_vals), 
-            "std_mee": np.std(mee_vals),
-            
-            "mean_tr_history": mean_tr_curve,
-            "mean_vl_history": mean_vl_curve,
-
-            "epoch_reached" : k_trainer.trigger_epoch
-
-
-        }
+        "test_internal_history_output": test_internal_history_output
+    }

@@ -6,169 +6,147 @@ from src.activationf import *
 from src.utils import *
 from src.training.validation.stratified_split import hold_out_validation_stratified
 
-# Carica dati
-x_i, d = load_monks_data("data/monk/train_data/monks-3.train")
+# =============================================================================
+# 1. DATA LOADING
+# =============================================================================
+x_i, d = load_monks_data("../data/monk/train_data/monks-3.train")
 x_i = x_i.to_numpy().astype(np.float64)
 d = d.to_numpy().astype(np.float64)
 
-
 tr_input, tr_target, vl_input, vl_target = hold_out_validation_stratified(x_i, d, monk_config.SPLIT)
 
-
-# GridSearch è una classe che usa **kwargs come argomento, ergo, 
-# non ha limiti di argomenti e combinazioni, 
-# al suo interno usa la classe TRAIN! Da tenere in considerazione se si
-# apportano modifiche lì!
-
+# =============================================================================
+# 2. GRID SEARCH
+# =============================================================================
 gs = GridSearch(
-
-    units_list = [
-        [3], #best
-        #[2],
-        #[4]
-        #[2, 2],
+    units_list=[
+        [3],  # best
+        [4],
         #[3, 3],
-        ],  
-    n_outputs = [monk_config.N_OUTPUTS],
-    f_act_hidden = [sigmaf,
-                     #relu
-                     ], 
-    f_act_output = [sigmaf],
-    
-    learning_rate = [
-            0.25, 
-            #0.1,    # best
-            #0.05,
-            #0.001,
-            #0.01,
-            #0.005
-            #0.16
-            ], 
-    
-    use_decay = [False],     
-    decay_factor = [0.9],
-    decay_step = [10],
-    
-    mini_batch_size = [
-        len(tr_input),
-        #1,
-        #25,
-        #50,    # best
-        #len(tr_input) * 0.5,
-        #len(tr_input) * 0.33,       
-        #len(tr_input) * 0.2,
-
+        #[4,4]
     ],
-    
-    epochs=[100],
-    
-    # --- EARLY STOPPING (Fondamentale) ---
-    early_stopping = [True],
-    patience = [
-        #5,
-        #10,
-        15,
-        #20,
-        #25,
-        #30,
-        40
-        #75,
-        #100,
-        #125,
-        #150,
-        #200,
-        #250
-        #250
-        ],       # Stop se accuracy non migliora per 20 epoche
-    epsilon = [
-        1e-6,
-        1e-7,
-        1e-8,
-        1e-9
-        ],
-    
-    momentum = [True],  
-    alpha_mom = [
-                #0.0,
-                #0.6,
-                0.9   #best
-                #0.95,
-                #0.8,
-                #0.75,
-                #0.7,
-                #0.5
-                ],
-    max_gradient_norm = [100],
-    
-    split = [monk_config.SPLIT],
-    verbose = [False],    
-    validation = [True],  
-    lambdal2 = [
-        #0.00001, 
-        0,
-        #0.0001,  #best
-        #0.00001
-        #0.00001
-        ]
+    n_outputs=[monk_config.N_OUTPUTS],
+    f_act_hidden=[sigmaf],
+    f_act_output=[sigmaf],
+
+    learning_rate=[0.25],
+
+    use_decay=[False],
+    decay_factor=[0.9],
+    decay_step=[10],
+
+    mini_batch_size=[len(tr_input)],
+
+    epochs=[200],
+
+    early_stopping=[True],
+    patience=[15, 20],
+    epsilon=[1e-25],
+
+    momentum=[True],
+    alpha_mom=[0.9],
+    max_gradient_norm=[100],
+
+    split=[monk_config.SPLIT],
+    verbose=[False],
+    validation=[True],
+    lambdal2=[0.0]
 )
 
 print("\n🚀 Avvio Grid Search...")
 best_config, best_acc_gs = gs.run_for_monk_holdout(tr_input, tr_target, vl_input, vl_target)
 
-print("\n" + "═"*60)
+print("\n" + "═" * 60)
 print(f"🏆 MIGLIOR CONFIGURAZIONE TROVATA (Val Acc: {best_acc_gs:.2%})")
-print("═"*60)
+print("═" * 60)
 for k, v in best_config.items():
     print(f" • {k:<20}: {v}")
-print("═"*60)
+print("═" * 60)
 
 # =============================================================================
-# 3. FINAL RETRAINING & TEST (Assessment)
+# 3. FINAL RETRAINING & STATISTICAL ASSESSMENT
 # =============================================================================
-# Ora che abbiamo i parametri migliori, riaddestriamo su TUTTO il training set (tr + vl)
-# e testiamo sul file di test separato (monks-X.test) se esiste.
 
-print("\n🔁 Retraining finale sul dataset completo...")
-
-# Carica il Test Set (se definito in config)
-# Assumiamo tu abbia definito PATH_TS in monk_config
+print("\n🔁 Caricamento Test Set...")
 try:
-    x_test, d_test = load_monks_data("data/monk/test_data/monks-3.test")
+    x_test, d_test = load_monks_data("../data/monk/test_data/monks-3.test")
     x_test = x_test.to_numpy().astype(np.float64)
     d_test = d_test.to_numpy().astype(np.float64)
     has_test_set = True
-    print(f"Test Set caricato: {x_test.shape[0]} patterns")
+    print(f"✅ Test Set caricato: {x_test.shape[0]} patterns")
 except:
-    print("⚠️ Nessun Test Set trovato (PATH_TS). Uso la validazione come stima finale.")
+    print("⚠️ Nessun Test Set trovato. I risultati saranno limitati al training.")
     has_test_set = False
+    x_test, d_test = None, None
 
 
-# Tolgo l'early 
-final_config = best_config.copy()
-final_config['early_stopping'] = False 
+def evaluate_configuration_with_restarts(label, config, x_tr, y_tr, x_ts, y_ts, n_trials=10):
+    print("\n" + "█" * 60)
+    print(f"▶ ASSESSMENT: {label} (su {n_trials} inizializzazioni)")
+    print(
+        f"  Config: L2={config.get('lambdal2', 0)}, Eta={config.get('learning_rate')}, Batch={config.get('mini_batch_size')}")
+    print("█" * 60)
 
-# Creiamo il trainer finale
-final_trainer = TrainerMonk(input_size=x_test.shape[1],**final_config)
-# Forziamo verbose=True per vedere il training
-final_trainer.verbose = True 
+    mses, accs_tr, accs_ts = [], [], []
 
-# Addestriamo su x_i (tutto il dataset di train originale)
-# Passiamo x_test come validazione solo per vedere i grafici, ma NON per fermarci (early stopping)
-# Oppure usiamo early stopping su una piccola porzione se necessario.
-# Per il Monk standard, spesso si fa training a epoche fisse o fino a MSE < tot.
-mse_final, acc_final_tr = final_trainer.fit(x_i, d, 
-                                            ts_x=x_test if has_test_set else None, 
-                                            ts_d=d_test if has_test_set else None)
+    for i in range(n_trials):
+        print(f"   ↳ Run {i + 1}/{n_trials}...", end="\r")
 
-print("\n" + "█"*60)
-print("📄 REPORT FINALE MONK")
-print("█"*60)
-print(f"MSE Finale Training: {mse_final:.5f}")
-print(f"Accuracy Training:   {acc_final_tr:.2%}")
+        # 1. Reinizializza
+        trainer = TrainerMonk(input_size=x_tr.shape[1], **config)
+        trainer.verbose = True
 
-if has_test_set:
-    # Calcoliamo Accuracy sul Test Set
-    acc_test = final_trainer._compute_accuracy_internal(x_test, d_test)
-    print(f"Accuracy TEST SET:   {acc_test:.2%}")
+        # 2. Train
+        final_mse, _ = trainer.fit(x_tr, y_tr, ts_x=x_ts, ts_d=y_ts)
+        print(final_mse)
+        # 3. CALCOLO ESPLICITO ACCURACY (FIX)
+        # Calcoliamo l'accuracy di TRAIN chiamando direttamente la funzione interna
+        final_acc_tr = trainer._compute_accuracy_internal(x_tr, y_tr)
 
-print("█"*60)
+        mses.append(final_mse)
+        accs_tr.append(final_acc_tr)
+
+        if x_ts is not None:
+            acc_ts = trainer._compute_accuracy_internal(x_ts, y_ts)
+            accs_ts.append(acc_ts)
+
+    print(f"   ✅ Completato {n_trials} run.                 ")
+
+    # Calcolo statistiche
+    mean_mse, std_mse = np.mean(mses), np.std(mses)
+    mean_tr, std_tr = np.mean(accs_tr), np.std(accs_tr)
+
+    print("-" * 60)
+    print(f"   MSE (Train):       {mean_mse:.5f} ± {std_mse:.5f}")
+    print(f"   Accuracy (Train):  {mean_tr:.2%} ± {std_tr:.2%}")
+
+    mean_ts, std_ts = 0.0, 0.0
+    if x_ts is not None:
+        mean_ts, std_ts = np.mean(accs_ts), np.std(accs_ts)
+        print(f"   Accuracy (TEST):   {mean_ts:.2%} ± {std_ts:.2%}")
+    print("-" * 60)
+
+    return mean_mse, mean_tr, mean_ts
+
+
+# --- SETUP RUNS ---
+N_TRIALS = 20  # Numero di inizializzazioni diverse su cui fare la media
+
+# 1. Configurazione Ottimale (Best Grid Search)
+evaluate_configuration_with_restarts("Best Configuration Found", best_config, x_i, d, x_test, d_test, n_trials=N_TRIALS)
+
+# 2. Configurazione di Confronto (Toggle L2)
+run2_config = best_config.copy()
+original_l2 = run2_config.get('lambdal2', 0.0)
+
+if original_l2 == 0.0:
+    run2_config['lambdal2'] = 0.01
+    run2_config['epsilon'] = 1e-7
+    label_comp = "Confronto: With L2 (0.001) and epsilon 1e-7"
+else:
+    run2_config['lambdal2'] = 0.0
+    label_comp = "Confronto: Without L2 (0.0)"
+
+evaluate_configuration_with_restarts(label_comp, run2_config, x_i, d, x_test, d_test, n_trials=N_TRIALS)
+
+print("\n🏁 Assessment completato.")

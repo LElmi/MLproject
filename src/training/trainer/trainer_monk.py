@@ -1,8 +1,9 @@
 from src.training.trainer.trainer import Trainer
 from src.training.trainer.stopper import EarlyStopper
 import time
-from src.utils.visualization import plot_monk
+#from src.utils.visualization import plot_monk
 from src.activationf import *
+from src.utils import *
 
 
 
@@ -120,3 +121,5 @@ class TrainerMonk(Trainer):
                 matched += 1
         
         return matched / x.shape[0]
+    
+

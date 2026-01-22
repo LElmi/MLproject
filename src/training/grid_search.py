@@ -4,6 +4,7 @@ from src.training.trainer.trainer_monk import TrainerMonk
 from src.utils import *
 from src.training.validation.k_fold import run_k_fold_cup
 from src.utils import *
+import pandas as pd
 
 
 
@@ -94,17 +95,22 @@ class GridSearch:
     
 
     
-    def run_for_cup_with_kfold(self, x_full, d_full, k_folds, 
-                               
-                                x_test_internal = None):
+    def run_for_cup_with_kfold(self,
+                            x_full, d_full, k_folds,
+                            d_min, d_max,
+                            x_test_internal = None):
             """
             Model Selection robusta: K-Fold su ogni configurazione.
             """
             print(f"🚀 Inizio Grid Search con K-Fold (K={k_folds})...")
-
             all_results = [] # Lista che passeremo al plotter
+            results_data = []
 
             for i, config_dict in enumerate(self.combinations):
+
+                full_config = config_dict.copy()
+                full_config['d_max'] = d_max
+                full_config['d_min'] = d_min
                 
                 # Chiamiamo la funzione aggiornata sopra
                 # quindi ogni configurazione * k (k_folds)
@@ -119,33 +125,43 @@ class GridSearch:
                 
                 mean_mse_val = stats['vl_mean_mse']
 
+                row = config_dict.copy()
+                row['Mean_VL_MEE'] = stats['vl_mean_mee']
+                row['Std_VL_MEE'] = stats['vl_std_mee'] # Scala anche la deviazione standard
+                row['Mean_TR_MEE'] = stats['tr_mean_mee']
+                results_data.append(row)
+
                 print(f"Config {i+1}/{len(self.combinations)} | Mean MSE: {mean_mse_val:.5f}")
 
                 # Aggiorna il best model
                 if mean_mse_val < self.best_mse:
                     self.best_mse = mean_mse_val
                     self.best_config = config_dict
-                    self.history_mean_vl_history = stats["mean_vl_history_mee"]
-                    self.history_mean_tr_history = stats["mean_tr_history_mee"]
+                    self.history_mean_vl_history = stats["all_vl_history_mee"]
+                    self.history_mean_tr_history = stats["all_tr_history_mee"]
                     self.best_epoch = stats["epoch_reached"]
                     print(f"   ⭐️ New Best Found!")
                 
                 # --- COSTRUZIONE DATI PER IL PLOT ---
                 result_entry = {
                     'params': config_dict,
-                    'tr_mse': stats['all_tr_history_mee'], 
-                    'vl_mse': stats['mean_vl_history_mee']  
+                    'tr_metric': stats['all_tr_history_mee'], 
+                    'vl_metric': stats['all_vl_history_mee']  
                 }
                 all_results.append(result_entry)
 
-
+            
+            # Crea la tabella
+            df_results = pd.DataFrame(results_data)
+            df_results = df_results.sort_values(by='Mean_VL_MEE')
+            df_results.to_csv('results/grid_search_results.csv', index=False)
+            print("\n Tabella risultati salvata in 'results/grid_search_results.csv'")
+            print(df_results.head(5)) # Stampa i top 5 a video
 
             # Chiamata al plotter FUORI dal ciclo for
             print("Generazione grafici con valori denormalizzati...")
 
-            denorm_mean_euclidean_error_test()
-
-            plot_grid_analysis_cup(all_results, top_k_individual=5, relative_path="results/cup/grid_kfold")
+            plot_grid_analysis_cup2(all_results, top_k=5, save_path="results/cup/grid_kfold")
 
             return self.best_config, self.best_mse, self.best_epoch, self.history_mean_tr_history, self.history_mean_vl_history
 

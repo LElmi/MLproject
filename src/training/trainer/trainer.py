@@ -7,6 +7,7 @@ from src.nn.nn import NN
 from src.training.trainer.forward.forward_pass import *
 from src.training.trainer.backward.backprop import compute_delta_all_layers_list
 from src.utils import *
+
 Array2D = np.ndarray
 Array1D = np.ndarray
 
@@ -40,7 +41,9 @@ class Trainer(ABC):
                  early_stopping: bool = False,
                  epsilon: float = 0,
                  split: int = 0,
-                 patience: int = 0):  # <- Importante da togliere nella grid search
+                 patience: int = 0,
+                 d_min: float = 0,
+                 d_max: float = 1 ):   # <- Caso standard per il monk
 
 
         self.f_act_hidden = f_act_hidden
@@ -62,6 +65,8 @@ class Trainer(ABC):
         self.epsilon = epsilon
         self.patience = patience
         self.validation = validation
+        self.d_min = d_min
+        self.d_max = d_max
 
         # Inizializza la rete neurale
         self.neuraln = NN(
@@ -193,8 +198,12 @@ class Trainer(ABC):
             self.learning_rate *= self.decay_factor        
         
         d_ordered = d_matrix[indices]
-        epoch_mee = mean_euclidean_error(final_output, d_ordered)
-        epoch_mse = mean_squared_error(final_output, d_ordered)
+
+        epoch_mee = denorm_mean_euclidean_error(final_output, d_ordered, self.d_max, self.d_min)
+        epoch_mse = denorm_mean_squared_error(final_output, d_ordered, self.d_max, self.d_min)
+
+        #epoch_mee = mean_euclidean_error(final_output, d_ordered)
+        #epoch_mse = mean_squared_error(final_output, d_ordered)
 
         return {
             'mee_tr': epoch_mee,

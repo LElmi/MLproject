@@ -30,13 +30,19 @@ def mean_euclidean_error(outputs, targets):
     errors = np.linalg.norm(outputs - targets, axis=1)
     return np.mean(errors)
 
-def denorm_mean_euclidean_error_test(outputs, targets, maxx, minx, maxd,mind):
+def denorm_mean_euclidean_error(outputs, targets, dmax, dmin):
     outputs, targets = _normalize_shapes(outputs, targets)
-    outputs = outputs * (maxx - minx) + minx
-    targets = targets * (maxd - mind) + mind
+    outputs = outputs * (dmax - dmin) + dmin
+    targets = targets * (dmax - dmin) + dmin
     errors = np.linalg.norm(outputs - targets, axis=1)
     return np.mean(errors)
 
+def denorm_mean_squared_error(outputs, targets, dmax, dmin):
+    outputs, targets = _normalize_shapes(outputs, targets)
+    outputs = outputs * (dmax - dmin) + dmin
+    targets = targets * (dmax - dmin) + dmin
+    squared_errors = np.sum((outputs - targets) ** 2, axis=1)
+    return np.mean(squared_errors)
 
 
 def mean_squared_error(outputs, targets):
