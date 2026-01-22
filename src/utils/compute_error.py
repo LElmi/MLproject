@@ -30,7 +30,7 @@ def mean_euclidean_error(outputs, targets):
     errors = np.linalg.norm(outputs - targets, axis=1)
     return np.mean(errors)
 
-def mean_euclidean_error_test(outputs, targets, maxx, minx, maxd,mind):
+def denorm_mean_euclidean_error_test(outputs, targets, maxx, minx, maxd,mind):
     outputs, targets = _normalize_shapes(outputs, targets)
     outputs = outputs * (maxx - minx) + minx
     targets = targets * (maxd - mind) + mind

@@ -7,7 +7,7 @@ from src.utils import *
 from src.training.validation.stratified_split import hold_out_validation_stratified
 
 # Carica dati
-x_i, d = load_monks_data("data/monk/train_data/monks-1.train")
+x_i, d = load_monks_data("data/monk/train_data/monks-3.train")
 x_i = x_i.to_numpy().astype(np.float64)
 d = d.to_numpy().astype(np.float64)
 
@@ -24,20 +24,22 @@ gs = GridSearch(
 
     units_list = [
         [3], #best
-        [2],
-        [4]
+        #[2],
+        #[4]
         #[2, 2],
         #[3, 3],
         ],  
     n_outputs = [monk_config.N_OUTPUTS],
-    f_act_hidden = [sigmaf, relu], 
+    f_act_hidden = [sigmaf,
+                     #relu
+                     ], 
     f_act_output = [sigmaf],
     
     learning_rate = [
             0.25, 
-            0.1,    # best
-            0.35
-            #0.15,
+            #0.1,    # best
+            #0.05,
+            #0.001,
             #0.01,
             #0.005
             #0.16
@@ -49,26 +51,47 @@ gs = GridSearch(
     
     mini_batch_size = [
         len(tr_input),
-        1,
-        50,    # best
+        #1,
+        #25,
+        #50,    # best
         #len(tr_input) * 0.5,
         #len(tr_input) * 0.33,       
         #len(tr_input) * 0.2,
 
     ],
     
-    epochs=[200],
+    epochs=[100],
     
     # --- EARLY STOPPING (Fondamentale) ---
     early_stopping = [True],
-    patience = [200],       # Stop se accuracy non migliora per 20 epoche
-    epsilon = [1e-3],
+    patience = [
+        #5,
+        #10,
+        15,
+        #20,
+        #25,
+        #30,
+        40
+        #75,
+        #100,
+        #125,
+        #150,
+        #200,
+        #250
+        #250
+        ],       # Stop se accuracy non migliora per 20 epoche
+    epsilon = [
+        1e-6,
+        1e-7,
+        1e-8,
+        1e-9
+        ],
     
     momentum = [True],  
     alpha_mom = [
-                0.0,
-                0.6,
-                0.9,   #best
+                #0.0,
+                #0.6,
+                0.9   #best
                 #0.95,
                 #0.8,
                 #0.75,
@@ -110,7 +133,7 @@ print("\n🔁 Retraining finale sul dataset completo...")
 # Carica il Test Set (se definito in config)
 # Assumiamo tu abbia definito PATH_TS in monk_config
 try:
-    x_test, d_test = load_monks_data("data/monk/test_data/monks-1.test")
+    x_test, d_test = load_monks_data("data/monk/test_data/monks-3.test")
     x_test = x_test.to_numpy().astype(np.float64)
     d_test = d_test.to_numpy().astype(np.float64)
     has_test_set = True
@@ -122,7 +145,7 @@ except:
 
 # Tolgo l'early 
 final_config = best_config.copy()
-final_config['early_stopping'] = False   
+final_config['early_stopping'] = False 
 
 # Creiamo il trainer finale
 final_trainer = TrainerMonk(input_size=x_test.shape[1],**final_config)

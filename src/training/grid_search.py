@@ -1,8 +1,9 @@
 import itertools
 from src.training.trainer.trainer_cup import TrainerCup
 from src.training.trainer.trainer_monk import TrainerMonk
-from src.utils.visualization import *
+from src.utils import *
 from src.training.validation.k_fold import run_k_fold_cup
+from src.utils import *
 
 
 
@@ -18,8 +19,8 @@ class GridSearch:
         self.best_config = None
         self.best_mse = float('inf')
         self.best_epoch = None
-        # self.best_accuracy = 0
-
+        self.history_mean_vl_history = []
+        self.history_mean_tr_history = []
         self.combinations = self._generate_combinations()
 
 
@@ -87,14 +88,15 @@ class GridSearch:
             })
         
 
-        plot_grid_search_analysis_monk(all_results_data)
+        plot_grid_search_analysis_monk2(all_results_data)
 
         return self.best_config, self.best_accuracy
-
     
 
     
-    def run_for_cup_with_kfold(self, x_full, d_full, k_folds=4, x_test_internal = None):
+    def run_for_cup_with_kfold(self, x_full, d_full, k_folds, 
+                               
+                                x_test_internal = None):
             """
             Model Selection robusta: K-Fold su ogni configurazione.
             """
@@ -115,7 +117,7 @@ class GridSearch:
                     x_test_internal = x_test_internal,
                 )
                 
-                mean_mse_val = stats['mean_mse']
+                mean_mse_val = stats['vl_mean_mse']
 
                 print(f"Config {i+1}/{len(self.combinations)} | Mean MSE: {mean_mse_val:.5f}")
 
@@ -123,24 +125,30 @@ class GridSearch:
                 if mean_mse_val < self.best_mse:
                     self.best_mse = mean_mse_val
                     self.best_config = config_dict
+                    self.history_mean_vl_history = stats["mean_vl_history_mee"]
+                    self.history_mean_tr_history = stats["mean_tr_history_mee"]
                     self.best_epoch = stats["epoch_reached"]
                     print(f"   ⭐️ New Best Found!")
                 
                 # --- COSTRUZIONE DATI PER IL PLOT ---
                 result_entry = {
                     'params': config_dict,
-                    'tr_mse': stats['mean_tr_history'], # Usiamo la curva media calcolata
-                    'vl_mse': stats['mean_vl_history']  # Usiamo la curva media calcolata
+                    'tr_mse': stats['all_tr_history_mee'], 
+                    'vl_mse': stats['mean_vl_history_mee']  
                 }
                 all_results.append(result_entry)
 
 
 
             # Chiamata al plotter FUORI dal ciclo for
-            print("Generazione grafici...")
+            print("Generazione grafici con valori denormalizzati...")
+
+            denorm_mean_euclidean_error_test()
+
             plot_grid_analysis_cup(all_results, top_k_individual=5, relative_path="results/cup/grid_kfold")
 
-            return self.best_config, self.best_mse, self.best_epoch
+            return self.best_config, self.best_mse, self.best_epoch, self.history_mean_tr_history, self.history_mean_vl_history
+
 
 
 """    def run_for_cup(self, x_train, d_train, vl_input, vl_targets):

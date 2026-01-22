@@ -30,9 +30,15 @@ def run_k_fold_cup(x_full, d_full, k_folds, model_config, x_test_internal = None
     - Curve Medie: Per i grafici (solo MSE, o anche MEE se vuoi)
     """
     
-    mse_vals = []
-    mee_vals = [] 
-    
+    vl_mse_vals = []
+    vl_mee_vals = [] 
+
+    tr_mse_vals = []
+    tr_mee_vals = [] 
+
+    all_tr_mee_histories = []
+    all_vl_mee_histories = []
+
     all_tr_mse_histories = [] 
     all_vl_mse_histories = []
 
@@ -61,32 +67,48 @@ def run_k_fold_cup(x_full, d_full, k_folds, model_config, x_test_internal = None
             test_internal_history_output.append(result[-1])
         
         # Appende per ogni k-esima fold, il vl_mse e vl_mee raggiunto migliore
-        mse_vals.append(min(k_trainer.vl_mse_history))
-        mee_vals.append(min(k_trainer.vl_mee_history)) 
-        
+        #mse_vals.append(min(k_trainer.vl_mse_history))
+        #mee_vals.append(min(k_trainer.vl_mee_history)) 
+        vl_mse_vals.append(k_trainer.vl_mse_history[-1])
+        vl_mee_vals.append(k_trainer.vl_mee_history[-1])
+        tr_mse_vals.append(k_trainer.tr_mse_history[-1])
+        tr_mee_vals.append(k_trainer.tr_mee_history[-1])
+
+        all_tr_mee_histories.append(k_trainer.tr_mee_history)
+        all_vl_mee_histories.append(k_trainer.vl_mee_history)
         all_tr_mse_histories.append(k_trainer.tr_mse_history)
         all_vl_mse_histories.append(k_trainer.vl_mse_history)
 
     # Cerca tra tutti k training quello che è durato meno epoche
-    min_len = min(len(h) for h in all_tr_mse_histories)
+    # vl_mee_vals k1 : [0.12, 532, 123]
+    # vl_mee_vals k2 : [[0.12, 43, 1313]]
+    # vl_mee_vals k3 : [[0.12, 123, 39]]]
+    # all_vl _mee_histories [ [ ], [ ], [ ]]
     
+    
+    min_len_mse = min(len(h) for h in all_tr_mse_histories)
 
-    tr_cut = [h[:min_len] for h in all_tr_mse_histories]
-    vl_cut = [h[:min_len] for h in all_vl_mse_histories]
+    tr_cut_mse = [h[:min_len_mse] for h in all_tr_mse_histories]
+    vl_cut_mse = [h[:min_len_mse] for h in all_vl_mse_histories]
     
-    mean_tr_curve = np.mean(tr_cut, axis=0).tolist()
-    mean_vl_curve = np.mean(vl_cut, axis=0).tolist()
+    mean_tr_curve_mse = np.mean(tr_cut_mse, axis=0).tolist()
+    mean_vl_curve_mse = np.mean(vl_cut_mse, axis=0).tolist()
+
 
     if x_test_internal is not None:
         return {
-            "mean_mse": np.mean(mse_vals),
-            "std_mse": np.std(mse_vals),
+            "vl_mean_mse": np.mean(vl_mse_vals),
+            "vl_mse_vals": vl_mse_vals,
+
+            "tr_mean_mse": np.mean(tr_mse_vals),
+            "tr_mse_vals": tr_mse_vals,
             
-            "mean_mee": np.mean(mee_vals), 
-            "std_mee": np.std(mee_vals),
+            "all_histories"
+            #"mean_tr_history_mee": mean_tr_curve_mee,
+            #"mean_vl_history_mee": mean_vl_curve_mee,
             
-            "mean_tr_history": mean_tr_curve,
-            "mean_vl_history": mean_vl_curve,
+            #"mean_tr_history_mse": mean_tr_curve_mse,
+            #"mean_vl_history_mse": mean_vl_curve_mse,
 
             "test_internal_history_output" : test_internal_history_output,
 

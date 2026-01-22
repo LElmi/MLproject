@@ -1,17 +1,17 @@
-- [ ] regolarizzazione
+- [x] regolarizzazione
     - [ ] tykhonov L2
 
-- [ ] minibatch
+- [x] minibatch
 
-- [ ] plot_utils
+- [x] plot_utils
     - [ ] plot finale accuracy, precision, recall per problemi di classificazione e plot finale caso regressione 
     - [ ] plot grid search su ciò che ci interessa sui parametri in esplorazione
     - [ ] plot k - fold
     - [ ] plot test set 
 
-- [ ] gestione test set (merge necessario)
+- [/] gestione test set (merge necessario)
 
-- [ ] grid search k-fold (merge necessario)
+- [x] grid search k-fold (merge necessario)
  
 - [ ] nested grid search 
 
@@ -19,9 +19,9 @@
 
 - [ ] implementare altre strategie di eta variabile
 
-- [ ] capire funzione di attivazione output layer
+- [x] capire funzione di attivazione output layer
 
-- [ ] merge
+- [x] merge
     - [ ] resa stabile branch IOROBOT
     - [ ] forward chiamabile dall'esterno (test set)
     - [ ] grid search flag in trainer, cambia comportamento in base a se è l'ultimo train

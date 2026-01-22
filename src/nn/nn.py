@@ -31,6 +31,23 @@ class NN:
         self.layer_results_list: list[Array1D] = [None] * num_layers
         self.layer_net_list: list[Array1D] = [None] * num_layers 
 
+    def run_nn(self, input):
+        """
+        Runna l'istanza delle rete neurale con lo stato attuale dei pesi memorizzati in memoria,
+        ritorna una lista di risultati in numpy array
+        """
+        final_output = [] 
+        for pattern in input:
+        # Forward pass per singolo pattern
+            layer_results, _ = self.forward_network(
+                pattern, 
+                self.f_act_hidden, 
+                self.f_act_output
+            )
+            final_output.append(layer_results[-1])
+
+        return np.array(final_output)
+
     def update_weights(self, delta_list: list[Array2D], eta, lambda_l2=1e-4):
         """
         Aggiorna i pesi con gradiente + regolarizzazione L2.
